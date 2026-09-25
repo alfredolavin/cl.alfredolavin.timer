@@ -14,6 +14,8 @@ Rectangle {
     property string uid
     default property alias extraButtons: extras.data
     signal emptyClicked
+    // When true the progress bar grows to fill the available width
+    property bool stretch: false
 
     readonly property var cfg: Plasmoid.configuration
     readonly property var entry: uid ? app.entry(uid) : null
@@ -56,8 +58,9 @@ Rectangle {
 
         ColumnLayout {
             Layout.fillHeight: true
+            Layout.fillWidth: frame.stretch
             Layout.preferredWidth: cfg.barWidth
-            Layout.maximumWidth: cfg.barWidth
+            Layout.maximumWidth: frame.stretch ? Number.POSITIVE_INFINITY : cfg.barWidth
             spacing: 0
 
             Text {

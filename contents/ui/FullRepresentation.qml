@@ -90,14 +90,14 @@ PlasmaExtras.Representation {
     Component {
         id: runningDelegate
         Item {
-            implicitHeight: frame.implicitHeight
+            implicitHeight: frame.height
             TimerFrame {
                 id: frame
                 app: full.app
                 uid: parent.parent.modelData
-                anchors.horizontalCenter: parent.horizontalCenter
-                width: implicitWidth
-                height: implicitHeight
+                stretch: true
+                width: parent.width
+                height: Math.round(implicitHeight * 0.75)
             }
         }
     }

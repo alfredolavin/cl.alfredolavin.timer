@@ -18,7 +18,7 @@
         <entry name="nameFontSize" type="Int"><default>9</default></entry>
         <entry name="nameBold" type="Bool"><default>true</default></entry>
         <entry name="barWidth" type="Int"><default>100</default></entry>
-        <entry name="barHeightPercent" type="Int"><default>80</default></entry>
+        <entry name="barHeightPercent" type="Int"><default>60</default></entry>
         <entry name="barRadius" type="Int"><default>4</default></entry>
         <entry name="trackColor" type="Color"><default>#5a000000</default></entry>
         <entry name="timeFontSize" type="Int"><default>0</default></entry>
