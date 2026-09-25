@@ -57,6 +57,8 @@ Item {
             size: frame.buttonSize
             borderColor: Plasmoid.configuration.borderColor
             iconName: "list-add"
+            // with a timer running, new timers are started from the ↑ popup
+            visible: !compact.app.currentUid
             tooltip: i18n("Start a timer")
             onClicked: compact.app.openPopup("add")
         }

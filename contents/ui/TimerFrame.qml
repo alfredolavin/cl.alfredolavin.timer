@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Layouts
+import QtQuick.Effects
 import org.kde.plasma.plasmoid
 import org.kde.kirigami as Kirigami
 
@@ -57,29 +58,42 @@ Rectangle {
             opacity: frame.finished && frame.app.blink ? 0.3 : 1
         }
 
-        ColumnLayout {
+        // Name drawn above the bar (higher z) so it can be larger and overlap it
+        Item {
             Layout.fillHeight: true
             Layout.fillWidth: frame.stretch
             Layout.preferredWidth: cfg.barWidth
             Layout.maximumWidth: frame.stretch ? Number.POSITIVE_INFINITY : cfg.barWidth
-            spacing: 0
 
             Text {
-                Layout.fillWidth: true
-                Layout.fillHeight: true
+                z: 1
+                anchors.top: parent.top
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.leftMargin: 2
                 text: frame.entry ? frame.entry.name : i18n("No timers running")
                 color: frame.contrastColor
                 font.pixelSize: cfg.nameFontSize
                 font.bold: cfg.nameBold
-                fontSizeMode: Text.VerticalFit
-                minimumPixelSize: 5
                 elide: Text.ElideRight
-                verticalAlignment: Text.AlignVCenter
+
+                layer.enabled: true
+                layer.effect: MultiEffect {
+                    shadowEnabled: true
+                    shadowColor: Gradients.prefersDark(frame.baseColor) ? "white" : "black"
+                    shadowOpacity: 0.8
+                    shadowBlur: 0.3
+                    shadowHorizontalOffset: 0
+                    shadowVerticalOffset: 1
+                    blurMax: 6
+                }
             }
 
             GradientBar {
-                Layout.fillWidth: true
-                Layout.preferredHeight: Math.round(frame.inner * cfg.barHeightPercent / 100)
+                anchors.bottom: parent.bottom
+                anchors.left: parent.left
+                anchors.right: parent.right
+                height: Math.round(frame.inner * cfg.barHeightPercent / 100)
                 stops: frame.gradient.stops
                 progress: frame.entry ? frame.app.progressOf(frame.entry) : 0
                 text: !frame.entry ? "--:--"
