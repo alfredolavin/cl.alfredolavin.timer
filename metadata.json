@@ -1,0 +1,17 @@
+{
+    "KPackageStructure": "Plasma/Applet",
+    "X-Plasma-API-Minimum-Version": "6.0",
+    "KPlugin": {
+        "Id": "cl.alfredolavin.timer",
+        "Name": "Nerd Timer",
+        "Description": "Panel timers with gradient progress bars, Nerd Font icons and synthesized alarm sounds",
+        "Icon": "chronometer",
+        "Category": "Utilities",
+        "License": "GPL-3.0+",
+        "Version": "1.0",
+        "Authors": [
+            { "Name": "Alfredo Lavin", "Email": "alfredolavin@gmail.com" }
+        ],
+        "FormFactors": [ "panel", "desktop" ]
+    }
+}

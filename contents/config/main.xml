@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kcfg xmlns="http://www.kde.org/standards/kcfg/1.0"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="http://www.kde.org/standards/kcfg/1.0 http://www.kde.org/standards/kcfg/1.0/kcfg.xsd">
+    <kcfgfile name=""/>
+
+    <group name="Appearance">
+        <entry name="cornerRadius" type="Int"><default>6</default></entry>
+        <entry name="borderColor" type="Color"><default>#3daee9</default></entry>
+        <entry name="borderWidth" type="Int"><default>2</default></entry>
+        <entry name="backgroundTransparency" type="Int"><default>30</default></entry>
+        <entry name="padding" type="Int"><default>2</default></entry>
+        <entry name="spacing" type="Int"><default>4</default></entry>
+        <entry name="iconSize" type="Int"><default>32</default></entry>
+        <entry name="iconFont" type="String"><default></default></entry>
+        <entry name="useThemeIconColor" type="Bool"><default>true</default></entry>
+        <entry name="iconColor" type="Color"><default>#ffffff</default></entry>
+        <entry name="nameFontSize" type="Int"><default>9</default></entry>
+        <entry name="nameBold" type="Bool"><default>true</default></entry>
+        <entry name="barWidth" type="Int"><default>100</default></entry>
+        <entry name="barHeightPercent" type="Int"><default>80</default></entry>
+        <entry name="barRadius" type="Int"><default>4</default></entry>
+        <entry name="trackColor" type="Color"><default>#5a000000</default></entry>
+        <entry name="timeFontSize" type="Int"><default>0</default></entry>
+        <entry name="textShadow" type="Bool"><default>true</default></entry>
+        <entry name="buttonIconSize" type="Int"><default>32</default></entry>
+        <entry name="buttonBorderWidth" type="Int"><default>1</default></entry>
+        <entry name="buttonRadius" type="Int"><default>4</default></entry>
+    </group>
+
+    <group name="Timers">
+        <!-- JSON array of timer definitions; empty means built-in defaults -->
+        <entry name="timers" type="String"><default></default></entry>
+        <!-- CSS gradients; empty means built-in defaults -->
+        <entry name="gradientsCss" type="String"><default></default></entry>
+        <!-- JSON array of running timers, survives restarts -->
+        <entry name="runningState" type="String"><default>[]</default></entry>
+    </group>
+</kcfg>
