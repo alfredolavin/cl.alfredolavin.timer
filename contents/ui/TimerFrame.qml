@@ -22,7 +22,8 @@ Rectangle {
     readonly property var gradient: app.gradientFor(entry ? entry.gradient : "")
     readonly property int inset: cfg.borderWidth + cfg.padding
     readonly property int inner: Math.max(8, height - 2 * inset)
-    readonly property int buttonSize: Math.max(8, Math.min(cfg.buttonIconSize, inner - 2 * (cfg.buttonBorderWidth + 1)))
+    // Buttons take at most 85% of the available height
+    readonly property int buttonSize: Math.max(8, Math.min(cfg.buttonIconSize, Math.round((inner - 2 * (cfg.buttonBorderWidth + 1)) * 0.85)))
     readonly property bool finished: !!entry && entry.finished
     // Opaque color of the frame as seen on the panel, for contrast decisions
     readonly property var baseColor: Gradients.over({ r: color.r, g: color.g, b: color.b, a: color.a },

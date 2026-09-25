@@ -23,7 +23,7 @@
         <entry name="trackColor" type="Color"><default>#5a000000</default></entry>
         <entry name="timeFontSize" type="Int"><default>0</default></entry>
         <entry name="textShadow" type="Bool"><default>true</default></entry>
-        <entry name="buttonIconSize" type="Int"><default>32</default></entry>
+        <entry name="buttonIconSize" type="Int"><default>27</default></entry>
         <entry name="buttonBorderWidth" type="Int"><default>1</default></entry>
         <entry name="buttonRadius" type="Int"><default>4</default></entry>
     </group>
