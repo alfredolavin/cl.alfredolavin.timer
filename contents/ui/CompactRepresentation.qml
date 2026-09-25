@@ -63,4 +63,8 @@ Item {
             onClicked: compact.app.openPopup("add")
         }
     }
+
+    AlarmSilencer {
+        app: compact.app
+    }
 }

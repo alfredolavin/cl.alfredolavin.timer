@@ -155,51 +155,69 @@ function titleCase(s) {
 // a /* comment */, a ".selector {" or a "Name:" label (CSS properties are ignored)
 function guessName(context, index) {
     var best = -1, name = "", m, re;
-    re = /\/\*\s*([^*]+?)\s*\*\//g;
+    re = /\/\*([\s\S]*?)\*\//g;
     while ((m = re.exec(context))) if (m.index > best) { best = m.index; name = m[1].replace(/^[-\s]+|[-\s]+$/g, ""); }
+    // selectors and labels are only looked for outside comments
+    var bare = context.replace(/\/\*[\s\S]*?\*\//g, function (c) { return c.replace(/[^\n]/g, " "); });
     re = /([.#]?[A-Za-z_][\w-]*)\s*\{/g;
-    while ((m = re.exec(context))) if (m.index > best) { best = m.index; name = titleCase(m[1]); }
+    while ((m = re.exec(bare))) if (m.index > best) { best = m.index; name = titleCase(m[1]); }
     re = /(^|[;{}\n\/])\s*([A-Za-z][\w ]*?)\s*:/g;
-    while ((m = re.exec(context))) {
+    while ((m = re.exec(bare))) {
         if (/^(background(-image|-color)?|border(-image)?|fill|color)$/i.test(m[2])) continue;
         if (m.index > best) { best = m.index; name = m[2].trim(); }
     }
     return name || ("Gradient " + (index + 1));
 }
 
-// Interpolate between two stops in OKLab or OKLCH (shorter hue arc)
-function interpolate(c1, c2, t, space) {
+var spaces = ["srgb", "oklab", "oklch"];
+var hueModes = ["shorter", "longer", "increasing", "decreasing"];
+
+// Hue difference from H1 to H2 following a CSS hue interpolation method
+function hueDelta(H1, H2, mode) {
+    var d = ((H2 - H1) % 360 + 360) % 360; // 0..360
+    if (mode === "longer") return d > 0 && d < 180 ? d - 360 : d === 0 ? 360 : d;
+    if (mode === "increasing") return d;
+    if (mode === "decreasing") return d > 0 ? d - 360 : d;
+    return d > 180 ? d - 360 : d;
+}
+
+// Interpolate between two colors in sRGB, OKLab or OKLCH
+function interpolate(c1, c2, t, space, hueMode) {
+    if (space === "srgb")
+        return mix(c1, c2, t);
     var p = rgbToOklab(c1), q = rgbToOklab(c2);
     var alpha = c1.a + (c2.a - c1.a) * t;
     if (space === "oklch") {
         var C1 = Math.hypot(p.a, p.b), C2 = Math.hypot(q.a, q.b);
         var H1 = Math.atan2(p.b, p.a) * 180 / Math.PI, H2 = Math.atan2(q.b, q.a) * 180 / Math.PI;
+        var gray = C1 < 1e-4 || C2 < 1e-4; // powerless hue: take the other one
         if (C1 < 1e-4) H1 = H2;
         if (C2 < 1e-4) H2 = H1;
-        var dh = ((H2 - H1 + 540) % 360) - 180;
+        var dh = gray ? 0 : hueDelta(H1, H2, hueMode);
         return oklchToRgb(p.L + (q.L - p.L) * t, C1 + (C2 - C1) * t, H1 + dh * t, alpha);
     }
     return oklabToRgb(p.L + (q.L - p.L) * t, p.a + (q.a - p.a) * t, p.b + (q.b - p.b) * t, alpha);
 }
 
-// Canvas interpolates in sRGB, so add intermediate stops for OKLab/OKLCH gradients
-function densify(stops, space) {
-    var out = [stops[0]], N = 12;
-    for (var i = 1; i < stops.length; ++i) {
-        var a = stops[i - 1], b = stops[i];
-        if (b.pos > a.pos)
-            for (var k = 1; k < N; ++k)
-                out.push({ pos: a.pos + (b.pos - a.pos) * k / N, color: interpolate(a.color, b.color, k / N, space) });
-        out.push(b);
-    }
-    return out;
+// CSS color hint: `mid` is where (0..1 of the segment) the colors mix 50/50
+function ease(t, mid) {
+    mid = clamp(mid, 0.001, 0.999);
+    return Math.abs(mid - 0.5) < 1e-4 ? t : Math.pow(t, Math.log(0.5) / Math.log(mid));
 }
 
-// Parse CSS text into [{name, stops: [{pos, color, css}]}]
-function parse(text) {
+function isCurved(mid) {
+    return mid !== undefined && Math.abs(mid - 0.5) > 1e-3;
+}
+
+// Parse CSS text into editable definitions:
+// [{name, space: "srgb"|"oklab"|"oklch", hue: "shorter"|"longer"|"increasing"|"decreasing",
+//   stops: [{pos: 0..1, color: "<css color>", mid: 0..1}]}]
+// `mid` is the color hint of the segment that ends at that stop (0.5 = linear).
+function parseDefs(text) {
     var result = [];
     var re = /(?:repeating-)?(?:linear|radial|conic)-gradient\(/gi;
     var m, prevEnd = 0;
+    text = text || "";
     while ((m = re.exec(text))) {
         var start = re.lastIndex, depth = 1, i = start;
         while (i < text.length && depth > 0) {
@@ -214,10 +232,15 @@ function parse(text) {
 
         var args = splitTop(body);
         var stops = [];
-        var space = "srgb";
-        var hint = args.length ? args[0].match(/\bin\s+(oklch|oklab|srgb|hsl|lch|lab)\b/i) : null;
+        var space = "srgb", hueMode = "shorter";
+        var hint = args.length ? args[0].match(/\bin\s+(oklch|oklab|srgb|hsl|lch|lab)\b(?:\s+(shorter|longer|increasing|decreasing)\s+hue\b)?/i) : null;
         args.forEach(function (arg) {
             var a = arg.trim();
+            if (/^-?[\d.]+%$/.test(a)) { // color hint between two stops
+                if (stops.length)
+                    stops[stops.length - 1].hint = parseFloat(a) / 100;
+                return;
+            }
             var cm = a.match(/^((?:rgba?|hsla?|oklch|oklab)\([^)]*\)|#[0-9a-fA-F]+|[a-zA-Z]+)\s*(.*)$/);
             if (!cm) return;
             var c = parseColor(cm[1]);
@@ -225,11 +248,14 @@ function parse(text) {
             if (c.modern) space = "oklab"; // CSS interpolates modern colors in OKLab by default
             var positions = cm[2].split(/\s+/).filter(function (p) { return /%$/.test(p); });
             if (!positions.length)
-                stops.push({ pos: NaN, color: c });
-            positions.forEach(function (p) { stops.push({ pos: parseFloat(p) / 100, color: c }); });
+                stops.push({ pos: NaN, color: cm[1] });
+            positions.forEach(function (p) { stops.push({ pos: parseFloat(p) / 100, color: cm[1] }); });
         });
-        if (hint)
+        if (hint) {
             space = /lch|hsl/i.test(hint[1]) ? "oklch" : hint[1].toLowerCase() === "srgb" ? "srgb" : "oklab";
+            if (hint[2])
+                hueMode = hint[2].toLowerCase();
+        }
         if (stops.length === 0)
             continue;
         if (stops.length === 1)
@@ -245,13 +271,173 @@ function parse(text) {
             for (var n = k; n < j; ++n)
                 stops[n].pos = from + (to - from) * (n - k + 1) / (j - k + 1);
         }
-        stops.forEach(function (s) { s.pos = clamp(s.pos, 0, 1); });
-        if (space !== "srgb")
-            stops = densify(stops, space);
-        stops.forEach(function (s) { s.css = css(s.color); });
-        result.push({ name: guessName(context, result.length), stops: stops });
+        var out = [];
+        stops.forEach(function (s, idx) {
+            var pos = clamp(s.pos, 0, 1);
+            if (idx > 0) pos = Math.max(pos, out[idx - 1].pos); // CSS never goes backwards
+            var mid = 0.5, prev = idx > 0 ? stops[idx - 1] : null;
+            if (prev && prev.hint !== undefined && pos > out[idx - 1].pos)
+                mid = Math.round(clamp((prev.hint - out[idx - 1].pos) / (pos - out[idx - 1].pos), 0, 1) * 1000) / 1000;
+            out.push({ pos: pos, color: s.color, mid: mid });
+        });
+        result.push({ name: guessName(context, result.length), space: space, hue: hueMode, stops: out });
     }
     return result;
+}
+
+// Stops sorted by position (stable), with parsed colors
+function sortedStops(def) {
+    return def.stops.map(function (s, i) {
+        return { pos: clamp(s.pos, 0, 1), color: parseColor(s.color) || { r: 0, g: 0, b: 0, a: 1 }, mid: s.mid === undefined ? 0.5 : s.mid, i: i };
+    }).sort(function (a, b) { return a.pos - b.pos || a.i - b.i; });
+}
+
+// Definition -> {name, stops: [{pos, color, css}]} ready for Canvas, which interpolates in sRGB:
+// intermediate stops are added for OKLab/OKLCH segments and curved (hinted) ones.
+function compile(def) {
+    var src = sortedStops(def);
+    if (!src.length)
+        return { name: def.name, stops: [] };
+    if (src.length === 1)
+        src.push({ pos: 1, color: src[0].color, mid: 0.5 });
+    var out = [src[0]];
+    for (var i = 1; i < src.length; ++i) {
+        var a = src[i - 1], b = src[i];
+        var curved = isCurved(b.mid);
+        if (b.pos > a.pos && (def.space !== "srgb" || curved)) {
+            var N = curved ? 24 : 12;
+            for (var k = 1; k < N; ++k)
+                out.push({ pos: a.pos + (b.pos - a.pos) * k / N,
+                           color: interpolate(a.color, b.color, ease(k / N, b.mid), def.space, def.hue) });
+        }
+        out.push(b);
+    }
+    return {
+        name: def.name,
+        stops: out.map(function (s) { return { pos: s.pos, color: s.color, css: css(s.color) }; })
+    };
+}
+
+// Parse CSS text into [{name, stops: [{pos, color, css}]}]
+function parse(text) {
+    return parseDefs(text).map(compile);
+}
+
+var defaultDefs = parseDefs(defaultCss);
+
+// ---- writing gradients back as CSS ----
+
+function hex2(v) {
+    var s = Math.round(clamp(v, 0, 1) * 255).toString(16);
+    return s.length < 2 ? "0" + s : s;
+}
+
+// {r, g, b, a} -> "#rrggbb" or "#rrggbbaa" (CSS order)
+function hex(c) {
+    return "#" + hex2(c.r) + hex2(c.g) + hex2(c.b) + (c.a < 0.999 ? hex2(c.a) : "");
+}
+
+function pct(v) {
+    return (Math.round(v * 1000) / 10) + "%";
+}
+
+function safeName(name) {
+    return (name || "").replace(/\*\//g, "* /").replace(/[\r\n]+/g, " ").trim();
+}
+
+function stringify(def) {
+    var head = "in " + def.space + (def.space === "oklch" && def.hue && def.hue !== "shorter" ? " " + def.hue + " hue" : "") + " 90deg";
+    var args = [head];
+    var s = def.stops.slice().sort(function (a, b) { return a.pos - b.pos; });
+    s.forEach(function (st, i) {
+        if (i > 0 && isCurved(st.mid))
+            args.push(pct(s[i - 1].pos + (st.pos - s[i - 1].pos) * st.mid));
+        args.push(st.color.trim() + " " + pct(st.pos));
+    });
+    return "linear-gradient(" + args.join(", ") + ")";
+}
+
+function serialize(defs) {
+    return defs.map(function (d) { return "/* " + safeName(d.name) + " */\n" + stringify(d) + ";\n"; }).join("\n");
+}
+
+function uniqueName(names, base) {
+    base = safeName(base) || "Gradient";
+    if (names.indexOf(base) < 0)
+        return base;
+    var root = base.replace(/\s+\d+$/, "");
+    for (var n = 2; ; ++n)
+        if (names.indexOf(root + " " + n) < 0)
+            return root + " " + n;
+}
+
+// ---- color editing helpers ----
+
+function round(v, d) {
+    var f = Math.pow(10, d);
+    return Math.round(v * f) / f;
+}
+
+// CSS color text -> {L: 0..1, C, H: 0..360, a}. oklch() is read as written so
+// out-of-gamut values survive editing; anything else is converted.
+function toOklch(str) {
+    var s = (str || "").trim().toLowerCase(), m = s.match(/^oklch\((.*)\)$/);
+    if (m) {
+        var args = m[1].replace("/", " ").split(/[\s,]+/).filter(function (x) { return x.length; });
+        if (args.length >= 3)
+            return { L: clamp(num(args[0], 1), 0, 1), C: Math.max(0, num(args[1], 0.4)), H: ((hue(args[2]) % 360) + 360) % 360,
+                     a: args.length > 3 ? clamp(num(args[3], 1), 0, 1) : 1 };
+    }
+    var c = parseColor(s) || { r: 0, g: 0, b: 0, a: 1 };
+    var lab = rgbToOklab(c), C = Math.hypot(lab.a, lab.b);
+    return { L: clamp(lab.L, 0, 1), C: C, H: C < 1e-4 ? 0 : ((Math.atan2(lab.b, lab.a) * 180 / Math.PI) + 360) % 360, a: c.a };
+}
+
+function oklchCss(L, C, H, a) {
+    return "oklch(" + round(L * 100, 1) + "% " + round(C, 3) + " " + round(H, 1) + (a < 0.999 ? " / " + round(a, 3) : "") + ")";
+}
+
+function rgbToHsl(c) {
+    var max = Math.max(c.r, c.g, c.b), min = Math.min(c.r, c.g, c.b), l = (max + min) / 2, d = max - min, h = 0, s = 0;
+    if (d > 1e-6) {
+        s = d / (1 - Math.abs(2 * l - 1));
+        h = max === c.r ? ((c.g - c.b) / d) % 6 : max === c.g ? (c.b - c.r) / d + 2 : (c.r - c.g) / d + 4;
+        h = (h * 60 + 360) % 360;
+    }
+    return { h: h, s: s, l: l };
+}
+
+// Rewrite a CSS color in another notation: "hex", "rgb", "hsl" or "oklch"
+function formatColor(str, fmt) {
+    if (fmt === "oklch") {
+        var o = toOklch(str);
+        return oklchCss(o.L, o.C, o.H, o.a);
+    }
+    var c = parseColor(str) || { r: 0, g: 0, b: 0, a: 1 };
+    var alpha = c.a < 0.999 ? " / " + round(c.a, 3) : "";
+    if (fmt === "rgb")
+        return "rgb(" + Math.round(c.r * 255) + " " + Math.round(c.g * 255) + " " + Math.round(c.b * 255) + alpha + ")";
+    if (fmt === "hsl") {
+        var h = rgbToHsl(c);
+        return "hsl(" + round(h.h, 1) + "deg " + round(h.s * 100, 1) + "% " + round(h.l * 100, 1) + "%" + alpha + ")";
+    }
+    return hex(c);
+}
+
+// Stops for a slider background showing one OKLCH channel ("L", "C", "H" or "a") swept 0..max
+function channelRamp(lch, channel, max) {
+    var out = [];
+    for (var i = 0; i <= 16; ++i) {
+        var v = max * i / 16;
+        var c = oklchToRgb(channel === "L" ? v : lch.L, channel === "C" ? v : lch.C, channel === "H" ? v : lch.H, channel === "a" ? v : 1);
+        out.push({ pos: i / 16, color: c, css: css(c) });
+    }
+    return out;
+}
+
+// Color of the gradient at pos as "#rrggbb[aa]"
+function sample(def, pos) {
+    return hex(colorAt(compile(def).stops, pos));
 }
 
 function find(list, name) {

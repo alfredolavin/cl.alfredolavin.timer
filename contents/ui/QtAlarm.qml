@@ -2,6 +2,8 @@ import QtQuick
 import QtMultimedia
 
 Item {
+    signal finished
+
     function play(url, repeat) {
         fx.stop();
         fx.source = url;
@@ -15,5 +17,6 @@ Item {
 
     SoundEffect {
         id: fx
+        onPlayingChanged: if (!playing) parent.finished()
     }
 }

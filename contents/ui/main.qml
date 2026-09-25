@@ -30,6 +30,7 @@ PlasmoidItem {
     readonly property var others: order.slice(1)
     readonly property var available: timers.filter(t => !running.some(r => r.id === t.id))
     readonly property bool anyFinished: running.some(r => r.finished)
+    readonly property bool alarmPlaying: alarm.playing
 
     preferredRepresentation: compactRepresentation
     compactRepresentation: CompactRepresentation { app: root }
@@ -126,6 +127,12 @@ PlasmoidItem {
             alarm.stop();
         if (others.length === 0 && popupMode === "running")
             expanded = false;
+    }
+
+    // Stop the alarm sound; finished timers keep blinking until dismissed or restarted
+    function silence() {
+        if (alarm.playing)
+            alarm.stop();
     }
 
     function checkFinished() {

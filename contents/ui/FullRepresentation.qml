@@ -53,6 +53,14 @@ PlasmaExtras.Representation {
                 onClicked: Plasmoid.internalAction("configure").trigger()
             }
         }
+
+        AlarmSilencer {
+            app: full.app
+        }
+    }
+
+    AlarmSilencer {
+        app: full.app
     }
 
     PlasmaComponents.ScrollView {
