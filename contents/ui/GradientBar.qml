@@ -22,6 +22,8 @@ Item {
     property color baseColor: "black"
     property real radius: 4
     property int fontSize: 0
+    // Fixed label color; null picks black or white for contrast
+    property var labelColor: null
     property bool shadow: true
     property bool blink: false
 
@@ -182,10 +184,17 @@ Item {
     Text {
         id: label
         anchors.centerIn: parent
+        // shrinks to the bar's real size minus 2 px padding on each side
+        width: Math.max(1, bar.width - 4)
+        height: Math.max(1, bar.height - 4)
+        horizontalAlignment: Text.AlignHCenter
+        verticalAlignment: Text.AlignVCenter
+        fontSizeMode: Text.Fit
+        minimumPixelSize: 6
         text: bar.text
         visible: text.length > 0
         opacity: bar.blink ? 0.25 : 1
-        color: bar.darkText ? "black" : "white"
+        color: bar.labelColor ?? (bar.darkText ? "black" : "white")
         font.pixelSize: bar.fontSize > 0 ? bar.fontSize : Math.max(7, Math.round(bar.height * 0.62))
         font.bold: true
         font.features: { "tnum": 1 }

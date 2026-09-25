@@ -24,15 +24,6 @@ var defaultTimers = [
     { id: "reading", name: "Reading", icon: "f14f7", duration: 1800, sound: 6, repeat: 2, gradient: "Aurora Borealis" }
 ];
 
-function glyph(hex) {
-    var cp = parseInt(hex, 16);
-    if (isNaN(cp))
-        return "";
-    if (cp <= 0xFFFF)
-        return String.fromCharCode(cp);
-    cp -= 0x10000;
-    return String.fromCharCode(0xD800 + (cp >> 10), 0xDC00 + (cp & 0x3FF));
-}
 
 function pad(n) {
     return n < 10 ? "0" + n : "" + n;
@@ -67,7 +58,9 @@ function normalize(t) {
         duration: Math.max(1, parseInt(t.duration) || 60),
         sound: Math.min(sounds.length - 1, Math.max(0, parseInt(t.sound) || 0)),
         repeat: Math.max(0, isNaN(parseInt(t.repeat)) ? 3 : parseInt(t.repeat)),
-        gradient: t.gradient || ""
+        gradient: t.gradient || "",
+        // text shown over the bar when the time is up; empty = "<name> Ready!!"
+        message: t.message || ""
     };
 }
 
@@ -82,6 +75,10 @@ function loadTimers(json) {
     return defaultTimers.map(normalize);
 }
 
+function finishedMessage(t) {
+    return t.message && t.message.trim().length ? t.message : (t.name || "Timer") + " Ready!!";
+}
+
 function loadRunning(json) {
     try {
         var a = JSON.parse(json || "[]");
@@ -89,17 +86,6 @@ function loadRunning(json) {
             return a.filter(function (r) { return r && r.uid; });
     } catch (e) {}
     return [];
-}
-
-// Prefer a pure symbols Nerd Font, otherwise any family with "nerd" in its name.
-function pickNerdFont(families) {
-    var nerd = families.filter(function (f) { return /nerd/i.test(f); });
-    var prefs = [/^Symbols Nerd Font$/i, /^Symbols Nerd Font Mono$/i, /Nerd Font Propo$/i, /Nerd Font Mono$/i, /Nerd Font$/i];
-    for (var i = 0; i < prefs.length; ++i)
-        for (var j = 0; j < nerd.length; ++j)
-            if (prefs[i].test(nerd[j]))
-                return nerd[j];
-    return nerd.length ? nerd[0] : "";
 }
 
 // ---- progress bar shadows ----

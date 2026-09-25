@@ -21,16 +21,16 @@ Item {
         anchors.verticalCenter: parent.verticalCenter
         width: implicitWidth
         height: Plasmoid.formFactor === PlasmaCore.Types.Vertical ? implicitHeight : parent.height
-        onEmptyClicked: compact.app.openPopup("add")
+        onEmptyClicked: compact.app.togglePopup()
 
         IconButton {
             size: frame.buttonSize
             borderColor: Plasmoid.configuration.borderColor
-            iconName: compact.app.expanded && compact.app.popupMode === "running" ? "go-down" : "go-up"
+            iconName: compact.app.expanded ? "go-down" : "go-up"
             tooltip: compact.app.others.length
                 ? i18np("%1 more running timer", "%1 more running timers", compact.app.others.length)
                 : i18n("No other running timers")
-            onClicked: compact.app.openPopup("running")
+            onClicked: compact.app.togglePopup()
 
             // small counter badge
             Rectangle {
@@ -53,15 +53,6 @@ Item {
             }
         }
 
-        IconButton {
-            size: frame.buttonSize
-            borderColor: Plasmoid.configuration.borderColor
-            iconName: "list-add"
-            // with a timer running, new timers are started from the ↑ popup
-            visible: !compact.app.currentUid
-            tooltip: i18n("Start a timer")
-            onClicked: compact.app.openPopup("add")
-        }
     }
 
     AlarmSilencer {

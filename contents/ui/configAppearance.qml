@@ -5,8 +5,6 @@ import org.kde.kirigami as Kirigami
 import org.kde.kcmutils as KCM
 import org.kde.kquickcontrols as KQControls
 
-import "code/util.js" as Util
-
 KCM.SimpleKCM {
     id: page
 
@@ -17,7 +15,6 @@ KCM.SimpleKCM {
     property alias cfg_padding: padding.value
     property alias cfg_spacing: spacing.value
     property alias cfg_iconSize: iconSize.value
-    property string cfg_iconFont
     property alias cfg_useThemeIconColor: autoIconColor.checked
     property alias cfg_iconColor: iconColor.color
     property alias cfg_nameFontSize: nameFontSize.value
@@ -30,8 +27,7 @@ KCM.SimpleKCM {
     property alias cfg_buttonIconSize: buttonIconSize.value
     property alias cfg_buttonBorderWidth: buttonBorderWidth.value
     property alias cfg_buttonRadius: buttonRadius.value
-
-    readonly property var nerdFonts: Qt.fontFamilies().filter(f => /nerd/i.test(f))
+    property alias cfg_finishedTextColor: finishedTextColor.color
 
     Kirigami.FormLayout {
         Kirigami.Separator { Kirigami.FormData.isSection: true; Kirigami.FormData.label: i18n("Frame") }
@@ -50,13 +46,6 @@ KCM.SimpleKCM {
         Kirigami.Separator { Kirigami.FormData.isSection: true; Kirigami.FormData.label: i18n("Icon") }
 
         QQC2.SpinBox { id: iconSize; Kirigami.FormData.label: i18n("Icon size:"); from: 8; to: 128 }
-        QQC2.ComboBox {
-            id: fontCombo
-            Kirigami.FormData.label: i18n("Icon font:")
-            model: [i18n("Automatic (%1)", Util.pickNerdFont(Qt.fontFamilies()) || i18n("none found"))].concat(page.nerdFonts)
-            currentIndex: Math.max(0, page.nerdFonts.indexOf(page.cfg_iconFont) + 1)
-            onActivated: index => page.cfg_iconFont = index === 0 ? "" : page.nerdFonts[index - 1]
-        }
         QQC2.CheckBox { id: autoIconColor; Kirigami.FormData.label: i18n("Icon color:"); text: i18n("Automatic (best contrast)") }
         KQControls.ColorButton { id: iconColor; enabled: !autoIconColor.checked }
 
@@ -79,6 +68,13 @@ KCM.SimpleKCM {
             valueFromText: t => t === i18n("Auto") ? 0 : parseInt(t)
         }
         QQC2.CheckBox { id: textShadow; text: i18n("Contrasting shadow behind the time") }
+        KQControls.ColorButton {
+            id: finishedTextColor
+            Kirigami.FormData.label: i18n("Time's up text color:")
+            showAlphaChannel: false
+            QQC2.ToolTip.text: i18n("Color of the bold text shown over the bar when a timer ends (set the text per timer)")
+            QQC2.ToolTip.visible: hovered
+        }
 
         Kirigami.Separator { Kirigami.FormData.isSection: true; Kirigami.FormData.label: i18n("Buttons") }
 

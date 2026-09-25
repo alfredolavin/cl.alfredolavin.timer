@@ -3,29 +3,20 @@ import QtQuick.Controls as QQC2
 import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 
-import "code/util.js" as Util
 import "code/icons.js" as Icons
 
-// Grid of Nerd Font glyphs with categories and search
+// Grid of the bundled SVG icons with categories and search
 QQC2.Dialog {
     id: dlg
 
-    property string iconFont
     property string selected
     property int category: 0
     property string hovered
     signal picked(string hex)
 
     readonly property var icons: {
-        const cat = Icons.categories[category];
         const q = search.text.trim().toLowerCase().replace(/\s+/g, "_");
-        let list;
-        if (cat === "Everything" || (q && category === 0))
-            list = Icons.all;
-        else if (category === 0)
-            list = Icons.featured;
-        else
-            list = Icons.featured.filter(i => i[2] === cat);
+        const list = category === 0 || q ? Icons.icons : Icons.icons.filter(i => i[2] === Icons.categories[category]);
         return q ? list.filter(i => i[1].indexOf(q) >= 0) : list;
     }
 
@@ -80,11 +71,11 @@ QQC2.Dialog {
                     border.width: 1
                     border.color: mouse.containsMouse ? Kirigami.Theme.highlightColor : Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g, Kirigami.Theme.textColor.b, 0.1)
 
-                    Text {
+                    SvgIcon {
                         anchors.centerIn: parent
-                        text: Util.glyph(modelData[0])
-                        font.family: dlg.iconFont
-                        font.pixelSize: parent.height * 0.6
+                        width: parent.height * 0.6
+                        height: width
+                        hex: modelData[0]
                         color: parent.current ? Kirigami.Theme.highlightedTextColor : Kirigami.Theme.textColor
                     }
 

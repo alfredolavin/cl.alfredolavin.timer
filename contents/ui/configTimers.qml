@@ -12,10 +12,8 @@ KCM.SimpleKCM {
 
     property string cfg_timers
     property string cfg_gradientsCss
-    property string cfg_iconFont
 
     readonly property var gradients: Gradients.parse(cfg_gradientsCss || Gradients.defaultCss)
-    readonly property string iconFont: cfg_iconFont || Util.pickNerdFont(Qt.fontFamilies())
     readonly property int idx: list.currentIndex
     property bool loading: false
     property string currentIcon
@@ -24,7 +22,7 @@ KCM.SimpleKCM {
 
     function roleValues(i) {
         const o = timersModel.get(i);
-        return { id: o.id, name: o.name, icon: o.icon, duration: o.duration, sound: o.sound, repeat: o.repeat, gradient: o.gradient };
+        return { id: o.id, name: o.name, icon: o.icon, duration: o.duration, sound: o.sound, repeat: o.repeat, gradient: o.gradient, message: o.message || "" };
     }
 
     function commit() {
@@ -47,6 +45,7 @@ KCM.SimpleKCM {
             const t = timersModel.get(idx);
             currentIcon = t.icon;
             nameField.text = t.name;
+            messageField.text = t.message || "";
             hours.value = Math.floor(t.duration / 3600);
             minutes.value = Math.floor(t.duration % 3600 / 60);
             seconds.value = t.duration % 60;
@@ -80,7 +79,6 @@ KCM.SimpleKCM {
 
     IconPicker {
         id: picker
-        iconFont: page.iconFont
         selected: page.currentIcon
         onPicked: hex => {
             page.currentIcon = hex;
@@ -208,12 +206,10 @@ KCM.SimpleKCM {
                             onClicked: list.currentIndex = index
                             contentItem: RowLayout {
                                 spacing: Kirigami.Units.smallSpacing
-                                Text {
-                                    Layout.preferredWidth: Kirigami.Units.iconSizes.medium
-                                    text: Util.glyph(model.icon)
-                                    font.family: page.iconFont
-                                    font.pixelSize: Kirigami.Units.iconSizes.smallMedium
-                                    horizontalAlignment: Text.AlignHCenter
+                                SvgIcon {
+                                    Layout.preferredWidth: Kirigami.Units.iconSizes.smallMedium
+                                    Layout.preferredHeight: Kirigami.Units.iconSizes.smallMedium
+                                    hex: model.icon
                                     color: highlighted ? Kirigami.Theme.highlightedTextColor : Kirigami.Theme.textColor
                                 }
                                 ColumnLayout {
@@ -258,13 +254,14 @@ KCM.SimpleKCM {
                 QQC2.ToolTip.text: i18n("Choose an icon")
                 QQC2.ToolTip.visible: hovered
                 onClicked: picker.open()
-                contentItem: Text {
-                    text: Util.glyph(page.currentIcon)
-                    font.family: page.iconFont
-                    font.pixelSize: Kirigami.Units.gridUnit * 2.2
-                    horizontalAlignment: Text.AlignHCenter
-                    verticalAlignment: Text.AlignVCenter
-                    color: Kirigami.Theme.textColor
+                contentItem: Item {
+                    SvgIcon {
+                        anchors.centerIn: parent
+                        width: Kirigami.Units.gridUnit * 2.2
+                        height: width
+                        hex: page.currentIcon
+                        color: Kirigami.Theme.textColor
+                    }
                 }
             }
 
@@ -273,6 +270,17 @@ KCM.SimpleKCM {
                 Kirigami.FormData.label: i18n("Name:")
                 Layout.preferredWidth: Kirigami.Units.gridUnit * 14
                 onTextEdited: page.setRole("name", text)
+            }
+
+            QQC2.TextField {
+                id: messageField
+                Kirigami.FormData.label: i18n("Time's up text:")
+                Layout.preferredWidth: Kirigami.Units.gridUnit * 14
+                placeholderText: Util.finishedMessage({ name: nameField.text })
+                onTextEdited: page.setRole("message", text)
+                QQC2.ToolTip.text: i18n("Shown over the progress bar when the time is up, followed by the duration. Leave empty for “%1”.", placeholderText)
+                QQC2.ToolTip.visible: hovered
+                QQC2.ToolTip.delay: Kirigami.Units.toolTipDelay
             }
 
             RowLayout {

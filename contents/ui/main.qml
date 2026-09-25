@@ -15,7 +15,6 @@ PlasmoidItem {
     // Timer definitions and gradients from the configuration
     readonly property var timers: Util.loadTimers(cfg.timers)
     readonly property var gradients: Gradients.parse(cfg.gradientsCss || Gradients.defaultCss)
-    readonly property string iconFont: cfg.iconFont || Util.pickNerdFont(Qt.fontFamilies())
 
     // Running timers: {uid, id, name, icon, duration, sound, repeat, gradient, end, remaining, paused, finished}
     property var running: Util.loadRunning(cfg.runningState)
@@ -23,8 +22,6 @@ PlasmoidItem {
     property var order: []
     property double now: Date.now()
     property bool blink: false
-    // "running" = other running timers, "add" = timers that can be started
-    property string popupMode: "running"
 
     readonly property string currentUid: order.length ? order[0] : ""
     readonly property var others: order.slice(1)
@@ -33,12 +30,19 @@ PlasmoidItem {
     readonly property bool alarmPlaying: alarm.playing
 
     preferredRepresentation: compactRepresentation
+    // Keeps the panel from auto-hiding while a timer is finished. NeedsAttention is not enough:
+    // the system tray often holds the panel at that level already, so nothing would change.
+    Plasmoid.status: anyFinished ? PlasmaCore.Types.RequiresAttentionStatus : PlasmaCore.Types.ActiveStatus
+
+    // The panel window hosting the widget (a PanelView), null on the desktop
+    property QtObject panelView: null
+    readonly property bool inPanel: !!panelView && panelView.visibilityMode !== undefined
     compactRepresentation: CompactRepresentation { app: root }
     fullRepresentation: FullRepresentation { app: root }
     switchWidth: Kirigami.Units.gridUnit * 10
     switchHeight: Kirigami.Units.gridUnit * 6
 
-    toolTipMainText: currentUid ? entry(currentUid).name : i18n("Nerd Timer")
+    toolTipMainText: entry(currentUid)?.name ?? i18n("Nerd Timer")
     toolTipSubText: currentUid ? Util.formatTime(remainingOf(entry(currentUid)))
                                  + (others.length ? "  ·  " + i18np("%1 more running", "%1 more running", others.length) : "")
                                : i18n("No timers running")
@@ -125,14 +129,54 @@ PlasmoidItem {
         });
         if (!anyFinished)
             alarm.stop();
-        if (others.length === 0 && popupMode === "running")
-            expanded = false;
     }
 
-    // Stop the alarm sound; finished timers keep blinking until dismissed or restarted
+    function finishedUids() {
+        return running.filter(r => r.finished).map(r => r.uid);
+    }
+
+    // Stop the alarm sound
     function silence() {
         if (alarm.playing)
             alarm.stop();
+    }
+
+    // Silence, and remove the given (finished at click time) timers from the running list
+    function dismiss(uids) {
+        silence();
+        if (!running.some(r => uids.indexOf(r.uid) >= 0))
+            return;
+        mutate(list => {
+            for (let i = list.length - 1; i >= 0; --i)
+                if (uids.indexOf(list[i].uid) >= 0)
+                    list.splice(i, 1);
+        });
+    }
+
+    // While a timer is finished an auto-hiding (1) or dodging (2) panel is switched to
+    // "windows go below" (3): always shown, above windows. The original mode is kept in the
+    // configuration, so it is restored even if plasmashell restarts in between.
+    function updatePanelReveal() {
+        if (!inPanel || !panelView)
+            return;
+        const saved = cfg.savedPanelVisibility;
+        if (anyFinished) {
+            const mode = panelView.visibilityMode;
+            if (saved < 0 && (mode === 1 || mode === 2)) {
+                Plasmoid.configuration.savedPanelVisibility = mode;
+                panelView.visibilityMode = 3;
+            }
+        } else if (saved >= 0) {
+            panelView.visibilityMode = saved;
+            Plasmoid.configuration.savedPanelVisibility = -1;
+        }
+    }
+
+    onAnyFinishedChanged: updatePanelReveal()
+    onPanelViewChanged: updatePanelReveal()
+
+    Item {
+        onWindowChanged: window => root.panelView = window
     }
 
     function checkFinished() {
@@ -147,13 +191,9 @@ PlasmoidItem {
         alarm.play(last.sound, last.repeat);
     }
 
-    function openPopup(mode) {
-        if (expanded && popupMode === mode) {
-            expanded = false;
-            return;
-        }
-        popupMode = mode;
-        expanded = true;
+    // The popup lists running timers and the ones that can be started, side by side
+    function togglePopup() {
+        expanded = !expanded;
     }
 
     AlarmPlayer {

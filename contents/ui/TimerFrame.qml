@@ -26,6 +26,13 @@ Rectangle {
     // Buttons take at most 85% of the available height
     readonly property int buttonSize: Math.max(8, Math.min(cfg.buttonIconSize, Math.round((inner - 2 * (cfg.buttonBorderWidth + 1)) * 0.85)))
     readonly property bool finished: !!entry && entry.finished
+    readonly property int barHeight: Math.round(inner * cfg.barHeightPercent / 100)
+    // "Time is up" text drawn over the bar, e.g. "Tea Ready!! (3m)"
+    readonly property string finishedText: finished ? Util.finishedMessage(entry) + " (" + Util.formatDuration(entry.duration) + ")" : ""
+    // with no timer, "No timers running" is centered in the bar, shrunk to fit its width
+    readonly property int emptyFontSize: Math.max(6, Math.min(Math.round(barHeight * 0.62),
+        Math.floor(100 * (cfg.barWidth - Math.max(4, barHeight / 2)) / Math.max(1, emptyMetrics.width))))
+    readonly property int barAreaWidth: cfg.barWidth
     // Opaque color of the frame as seen on the panel, for contrast decisions
     readonly property var baseColor: Gradients.over({ r: color.r, g: color.g, b: color.b, a: color.a },
         { r: Kirigami.Theme.backgroundColor.r, g: Kirigami.Theme.backgroundColor.g, b: Kirigami.Theme.backgroundColor.b, a: 1 })
@@ -44,16 +51,12 @@ Rectangle {
         anchors.margins: frame.inset
         spacing: cfg.spacing
 
-        Text {
+        SvgIcon {
             readonly property int px: Math.min(cfg.iconSize, frame.inner)
             Layout.preferredWidth: px
             Layout.preferredHeight: px
             Layout.alignment: Qt.AlignVCenter
-            text: Util.glyph(frame.entry ? frame.entry.icon : "f051b")
-            font.family: frame.app.iconFont
-            font.pixelSize: px
-            horizontalAlignment: Text.AlignHCenter
-            verticalAlignment: Text.AlignVCenter
+            hex: frame.entry ? frame.entry.icon : "f051b"
             color: cfg.useThemeIconColor ? frame.contrastColor : cfg.iconColor
             opacity: frame.finished && frame.app.blink ? 0.3 : 1
         }
@@ -62,8 +65,8 @@ Rectangle {
         Item {
             Layout.fillHeight: true
             Layout.fillWidth: frame.stretch
-            Layout.preferredWidth: cfg.barWidth
-            Layout.maximumWidth: frame.stretch ? Number.POSITIVE_INFINITY : cfg.barWidth
+            Layout.preferredWidth: frame.barAreaWidth
+            Layout.maximumWidth: frame.stretch ? Number.POSITIVE_INFINITY : frame.barAreaWidth
 
             Text {
                 z: 1
@@ -71,7 +74,8 @@ Rectangle {
                 anchors.left: parent.left
                 anchors.right: parent.right
                 anchors.leftMargin: 2
-                text: frame.entry ? frame.entry.name : i18n("No timers running")
+                visible: !!frame.entry && !frame.finished
+                text: frame.entry ? frame.entry.name : ""
                 color: frame.contrastColor
                 font.pixelSize: cfg.nameFontSize
                 font.bold: cfg.nameBold
@@ -90,14 +94,15 @@ Rectangle {
             }
 
             GradientBar {
-                anchors.bottom: parent.bottom
+                // under the name; vertically centered when there is no name to show
+                y: !frame.entry || frame.finished ? Math.round((parent.height - height) / 2) : parent.height - height
                 anchors.left: parent.left
                 anchors.right: parent.right
-                height: Math.round(frame.inner * cfg.barHeightPercent / 100)
+                height: frame.barHeight
                 stops: frame.gradient.stops
                 progress: frame.entry ? frame.app.progressOf(frame.entry) : 0
-                text: !frame.entry ? "--:--"
-                    : frame.finished ? i18n("Done!")
+                text: !frame.entry ? i18n("No timers running")
+                    : frame.finished ? frame.finishedText
                     : Util.formatTime(frame.app.remainingOf(frame.entry))
                 z: -1 // outer shadows and glow go under the name
                 trackColor: cfg.trackColor
@@ -108,7 +113,10 @@ Rectangle {
                          radius: cfg.glowRadius, strength: cfg.glowStrength, opacity: cfg.glowOpacity / 100 })
                 baseColor: Qt.rgba(frame.baseColor.r, frame.baseColor.g, frame.baseColor.b, 1)
                 radius: cfg.barRadius
-                fontSize: cfg.timeFontSize
+                // when finished: bold text at 95% of the bar height in the configured color
+                fontSize: !frame.entry ? frame.emptyFontSize
+                        : frame.finished ? Math.max(6, Math.round(frame.barHeight * 0.95)) : cfg.timeFontSize
+                labelColor: frame.finished ? cfg.finishedTextColor : null
                 shadow: cfg.textShadow
                 blink: frame.finished && frame.app.blink
                 opacity: frame.entry && frame.entry.paused ? 0.6 : 1
@@ -116,12 +124,11 @@ Rectangle {
         }
 
         IconButton {
-            visible: !!frame.entry
+            visible: !!frame.entry && !frame.finished
             size: frame.buttonSize
             borderColor: cfg.borderColor
-            iconName: !frame.entry ? "" : frame.finished ? "view-refresh"
-                    : frame.entry.paused ? "media-playback-start" : "media-playback-pause"
-            tooltip: !frame.entry ? "" : frame.finished ? i18n("Restart") : frame.entry.paused ? i18n("Resume") : i18n("Pause")
+            iconName: !frame.entry ? "" : frame.entry.paused ? "media-playback-start" : "media-playback-pause"
+            tooltip: !frame.entry ? "" : frame.entry.paused ? i18n("Resume") : i18n("Pause")
             onClicked: frame.app.togglePause(frame.uid)
         }
 
@@ -139,6 +146,14 @@ Rectangle {
             spacing: cfg.spacing
             visible: children.length > 0
         }
+    }
+
+    // measured at 100 px, scaled down to the bar width
+    TextMetrics {
+        id: emptyMetrics
+        font.bold: true
+        font.pixelSize: 100
+        text: i18n("No timers running")
     }
 
     MouseArea {

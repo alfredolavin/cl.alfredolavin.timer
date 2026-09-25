@@ -287,14 +287,16 @@ KCM.SimpleKCM {
         // ---------------- list + toolbar ----------------
         ColumnLayout {
             Layout.alignment: Qt.AlignTop
-            Layout.preferredWidth: Kirigami.Units.gridUnit * 15
-            Layout.maximumWidth: Kirigami.Units.gridUnit * 15
+            // never narrower than the toolbar, or its buttons end up under the editor
+            Layout.minimumWidth: toolbar.implicitWidth
+            Layout.preferredWidth: Math.max(Kirigami.Units.gridUnit * 15, toolbar.implicitWidth)
+            Layout.maximumWidth: Layout.preferredWidth
             spacing: 0
 
             QQC2.ToolBar {
+                id: toolbar
                 Layout.fillWidth: true
-                RowLayout {
-                    anchors.fill: parent
+                contentItem: RowLayout {
                     spacing: 0
                     Tool {
                         icon.name: "list-add"
@@ -494,7 +496,7 @@ KCM.SimpleKCM {
         ColumnLayout {
             Layout.alignment: Qt.AlignTop
             Layout.fillWidth: true
-            Layout.minimumWidth: Kirigami.Units.gridUnit * 22
+            Layout.minimumWidth: Kirigami.Units.gridUnit * 20
             spacing: Kirigami.Units.largeSpacing
             enabled: !!page.def
 
@@ -503,6 +505,7 @@ KCM.SimpleKCM {
                 QQC2.TextField {
                     id: nameField
                     Layout.fillWidth: true
+                    Layout.maximumWidth: Kirigami.Units.gridUnit * 18
                     onEditingFinished: page.rename(text)
                 }
             }
