@@ -101,3 +101,55 @@ function pickNerdFont(families) {
                 return nerd[j];
     return nerd.length ? nerd[0] : "";
 }
+
+// ---- progress bar shadows ----
+
+var shadowPresets = [
+    { name: "Soft drop", shadows: [{ x: 0, y: 2, blur: 4, spread: 0, color: "#80000000", inset: false }] },
+    { name: "Long soft", shadows: [{ x: 0, y: 4, blur: 12, spread: -1, color: "#66000000", inset: false }] },
+    { name: "Hard edge", shadows: [{ x: 2, y: 2, blur: 0, spread: 0, color: "#cc000000", inset: false }] },
+    { name: "Inner depth", shadows: [{ x: 0, y: 2, blur: 3, spread: 0, color: "#99000000", inset: true }] },
+    { name: "Top highlight", shadows: [{ x: 0, y: 1, blur: 1, spread: 0, color: "#80ffffff", inset: true }] },
+    { name: "Embossed", shadows: [{ x: 0, y: 1, blur: 2, spread: 0, color: "#80ffffff", inset: true },
+                                 { x: 0, y: -1, blur: 2, spread: 0, color: "#80000000", inset: true },
+                                 { x: 0, y: 1, blur: 2, spread: 0, color: "#66000000", inset: false }] },
+    { name: "Neon halo", shadows: [{ x: 0, y: 0, blur: 8, spread: 1, color: "#cc00e5ff", inset: false },
+                                  { x: 0, y: 0, blur: 3, spread: 0, color: "#ffffffff", inset: false }] }
+];
+
+function normalizeShadow(s) {
+    function n(v, d) { v = parseFloat(v); return isNaN(v) ? d : v; }
+    return {
+        enabled: s.enabled !== false,
+        x: n(s.x, 0), y: n(s.y, 2), blur: Math.max(0, n(s.blur, 4)), spread: n(s.spread, 0),
+        color: typeof s.color === "string" && s.color.length ? s.color : "#80000000",
+        inset: !!s.inset
+    };
+}
+
+function parseShadows(json) {
+    try {
+        var a = JSON.parse(json || "[]");
+        if (Array.isArray(a))
+            return a.map(normalizeShadow);
+    } catch (e) {}
+    return [];
+}
+
+// Qt color strings ("#rrggbb" or "#aarrggbb") to {r, g, b, a} in 0..1
+function qtColor(str) {
+    var h = (str || "").replace("#", "");
+    var a = 1;
+    if (h.length === 8) {
+        a = parseInt(h.substr(0, 2), 16) / 255;
+        h = h.substr(2);
+    }
+    if (h.length !== 6)
+        return { r: 0, g: 0, b: 0, a: 0.5 };
+    return { r: parseInt(h.substr(0, 2), 16) / 255, g: parseInt(h.substr(2, 2), 16) / 255, b: parseInt(h.substr(4, 2), 16) / 255, a: a };
+}
+
+function cssOfHex(str) {
+    var c = qtColor(str);
+    return "rgba(" + Math.round(c.r * 255) + "," + Math.round(c.g * 255) + "," + Math.round(c.b * 255) + "," + c.a.toFixed(3) + ")";
+}

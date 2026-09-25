@@ -99,7 +99,13 @@ Rectangle {
                 text: !frame.entry ? "--:--"
                     : frame.finished ? i18n("Done!")
                     : Util.formatTime(frame.app.remainingOf(frame.entry))
+                z: -1 // outer shadows and glow go under the name
                 trackColor: cfg.trackColor
+                borderColor: cfg.barBorderColor
+                borderWidth: cfg.barBorderWidth
+                shadows: Util.parseShadows(cfg.barShadows)
+                glow: ({ enabled: cfg.glowEnabled, useGradient: cfg.glowUseGradient, color: cfg.glowColor,
+                         radius: cfg.glowRadius, strength: cfg.glowStrength, opacity: cfg.glowOpacity / 100 })
                 baseColor: Qt.rgba(frame.baseColor.r, frame.baseColor.g, frame.baseColor.b, 1)
                 radius: cfg.barRadius
                 fontSize: cfg.timeFontSize

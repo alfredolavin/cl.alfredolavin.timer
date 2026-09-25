@@ -8,6 +8,11 @@ ConfigModel {
         source: "configAppearance.qml"
     }
     ConfigCategory {
+        name: i18n("Progress bar")
+        icon: "format-stroke-color"
+        source: "configBar.qml"
+    }
+    ConfigCategory {
         name: i18n("Timers")
         icon: "chronometer"
         source: "configTimers.qml"

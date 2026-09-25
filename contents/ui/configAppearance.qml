@@ -25,7 +25,6 @@ KCM.SimpleKCM {
     property alias cfg_barWidth: barWidth.value
     property alias cfg_barHeightPercent: barHeight.value
     property alias cfg_barRadius: barRadius.value
-    property alias cfg_trackColor: trackColor.color
     property alias cfg_timeFontSize: timeFontSize.value
     property alias cfg_textShadow: textShadow.checked
     property alias cfg_buttonIconSize: buttonIconSize.value
@@ -72,7 +71,6 @@ KCM.SimpleKCM {
             QQC2.Label { text: i18n("%1 % of the height", barHeight.value) }
         }
         QQC2.SpinBox { id: barRadius; Kirigami.FormData.label: i18n("Bar corner radius:"); from: 0; to: 30 }
-        KQControls.ColorButton { id: trackColor; Kirigami.FormData.label: i18n("Empty bar color:"); showAlphaChannel: true }
         QQC2.SpinBox {
             id: timeFontSize
             Kirigami.FormData.label: i18n("Time font size (px):")

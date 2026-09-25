@@ -20,12 +20,25 @@
         <entry name="barWidth" type="Int"><default>100</default></entry>
         <entry name="barHeightPercent" type="Int"><default>60</default></entry>
         <entry name="barRadius" type="Int"><default>4</default></entry>
-        <entry name="trackColor" type="Color"><default>#5a000000</default></entry>
         <entry name="timeFontSize" type="Int"><default>0</default></entry>
         <entry name="textShadow" type="Bool"><default>true</default></entry>
         <entry name="buttonIconSize" type="Int"><default>27</default></entry>
         <entry name="buttonBorderWidth" type="Int"><default>1</default></entry>
         <entry name="buttonRadius" type="Int"><default>4</default></entry>
+    </group>
+
+    <group name="ProgressBar">
+        <entry name="trackColor" type="Color"><default>#5a000000</default></entry>
+        <entry name="barBorderColor" type="Color"><default>#59ffffff</default></entry>
+        <entry name="barBorderWidth" type="Int"><default>1</default></entry>
+        <!-- JSON array of {enabled, x, y, blur, spread, color, inset} -->
+        <entry name="barShadows" type="String"><default>[{"enabled":true,"x":0,"y":1,"blur":3,"spread":0,"color":"#80000000","inset":false},{"enabled":true,"x":0,"y":1,"blur":2,"spread":0,"color":"#73000000","inset":true}]</default></entry>
+        <entry name="glowEnabled" type="Bool"><default>true</default></entry>
+        <entry name="glowUseGradient" type="Bool"><default>true</default></entry>
+        <entry name="glowColor" type="Color"><default>#3daee9</default></entry>
+        <entry name="glowRadius" type="Int"><default>6</default></entry>
+        <entry name="glowStrength" type="Int"><default>1</default></entry>
+        <entry name="glowOpacity" type="Int"><default>70</default></entry>
     </group>
 
     <group name="Timers">
