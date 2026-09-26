@@ -22,7 +22,7 @@ KCM.SimpleKCM {
 
     function roleValues(i) {
         const o = timersModel.get(i);
-        return { id: o.id, name: o.name, icon: o.icon, duration: o.duration, sound: o.sound, repeat: o.repeat, gradient: o.gradient, message: o.message || "" };
+        return { id: o.id, name: o.name, icon: o.icon, kind: o.kind, at: o.at, duration: o.duration, sound: o.sound, repeat: o.repeat, gradient: o.gradient, message: o.message || "" };
     }
 
     function commit() {
@@ -46,6 +46,9 @@ KCM.SimpleKCM {
             currentIcon = t.icon;
             nameField.text = t.name;
             messageField.text = t.message || "";
+            kindCombo.currentIndex = t.kind === "alarm" ? 1 : 0;
+            alarmHour.value = Math.floor(t.at / 60);
+            alarmMinute.value = t.at % 60;
             hours.value = Math.floor(t.duration / 3600);
             minutes.value = Math.floor(t.duration % 3600 / 60);
             seconds.value = t.duration % 60;
@@ -113,6 +116,12 @@ KCM.SimpleKCM {
                                                    gradient: page.gradients.length ? page.gradients[0].name : "" })
                     }
                     Tool {
+                        icon.name: "clock"
+                        text: i18n("Add alarm")
+                        onClicked: page.addTimer({ name: i18n("New alarm"), icon: "f0020", kind: "alarm", at: 420, sound: 0, repeat: 3,
+                                                   gradient: page.gradients.length ? page.gradients[0].name : "" })
+                    }
+                    Tool {
                         icon.name: "edit-copy"
                         text: i18n("Duplicate timer")
                         enabled: page.idx >= 0
@@ -157,14 +166,15 @@ KCM.SimpleKCM {
                     }
                     Tool {
                         icon.name: "view-sort-ascending"
-                        text: i18n("Sort by duration")
+                        text: i18n("Sort by duration (alarms last, by time)")
                         enabled: timersModel.count > 1
                         onClicked: {
                             const a = [];
                             for (let i = 0; i < timersModel.count; ++i)
                                 a.push(page.roleValues(i));
                             const cur = page.idx >= 0 ? a[page.idx].id : "";
-                            a.sort((x, y) => x.duration - y.duration);
+                            const key = t => t.kind === "alarm" ? 1e7 + t.at : t.duration;
+                            a.sort((x, y) => key(x) - key(y));
                             timersModel.clear();
                             a.forEach(t => timersModel.append(t));
                             list.currentIndex = Math.max(0, a.findIndex(t => t.id === cur));
@@ -230,7 +240,7 @@ KCM.SimpleKCM {
                                     }
                                 }
                                 QQC2.Label {
-                                    text: Util.formatDuration(model.duration)
+                                    text: model.kind === "alarm" ? i18n("at %1", Util.formatClock(model.at)) : Util.formatDuration(model.duration)
                                     opacity: 0.7
                                     color: highlighted ? Kirigami.Theme.highlightedTextColor : Kirigami.Theme.textColor
                                 }
@@ -283,8 +293,36 @@ KCM.SimpleKCM {
                 QQC2.ToolTip.delay: Kirigami.Units.toolTipDelay
             }
 
+            QQC2.ComboBox {
+                id: kindCombo
+                Kirigami.FormData.label: i18n("Type:")
+                model: [i18n("Timer: counts down a duration"), i18n("Alarm: counts down to a time of day")]
+                onActivated: index => page.setRole("kind", index === 1 ? "alarm" : "timer")
+            }
+
+            RowLayout {
+                Kirigami.FormData.label: i18n("Time:")
+                visible: kindCombo.currentIndex === 1
+                QQC2.SpinBox {
+                    id: alarmHour
+                    from: 0; to: 23; editable: true; wrap: true
+                    textFromValue: v => Util.pad(v)
+                    valueFromText: t => parseInt(t) || 0
+                    onValueModified: page.setRole("at", value * 60 + alarmMinute.value)
+                }
+                QQC2.Label { text: ":" }
+                QQC2.SpinBox {
+                    id: alarmMinute
+                    from: 0; to: 59; editable: true; wrap: true
+                    textFromValue: v => Util.pad(v)
+                    valueFromText: t => parseInt(t) || 0
+                    onValueModified: page.setRole("at", alarmHour.value * 60 + value)
+                }
+            }
+
             RowLayout {
                 Kirigami.FormData.label: i18n("Duration:")
+                visible: kindCombo.currentIndex === 0
                 QQC2.SpinBox { id: hours; from: 0; to: 99; editable: true; onValueModified: page.updateDuration() }
                 QQC2.Label { text: i18nc("hours", "h") }
                 QQC2.SpinBox { id: minutes; from: 0; to: 59; editable: true; wrap: true; onValueModified: page.updateDuration() }
@@ -294,6 +332,7 @@ KCM.SimpleKCM {
             }
 
             Flow {
+                visible: kindCombo.currentIndex === 0
                 Layout.preferredWidth: Kirigami.Units.gridUnit * 18
                 spacing: Kirigami.Units.smallSpacing
                 Repeater {
@@ -388,8 +427,8 @@ KCM.SimpleKCM {
                 stops: page.gradients.length ? page.gradients[Math.max(0, gradientCombo.currentIndex)].stops : []
                 progress: 0.65
                 radius: 5
-                baseColor: Kirigami.Theme.backgroundColor
-                text: Util.formatTime((hours.value * 3600 + minutes.value * 60 + seconds.value) * 350)
+                text: kindCombo.currentIndex === 1 ? Util.formatClock(alarmHour.value * 60 + alarmMinute.value)
+                    : Util.formatTime((hours.value * 3600 + minutes.value * 60 + seconds.value) * 350)
             }
         }
     }

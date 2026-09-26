@@ -1,6 +1,5 @@
 import QtQuick
 import QtQuick.Layouts
-import QtQuick.Effects
 import org.kde.plasma.plasmoid
 import org.kde.kirigami as Kirigami
 
@@ -28,7 +27,9 @@ Rectangle {
     readonly property bool finished: !!entry && entry.finished
     readonly property int barHeight: Math.round(inner * cfg.barHeightPercent / 100)
     // "Time is up" text drawn over the bar, e.g. "Tea Ready!! (3m)"
-    readonly property string finishedText: finished ? Util.finishedMessage(entry) + " (" + Util.formatDuration(entry.duration) + ")" : ""
+    readonly property bool isAlarm: !!entry && entry.kind === "alarm"
+    readonly property string finishedText: finished ? Util.finishedMessage(entry) + " ("
+        + (isAlarm ? Util.formatClock(entry.at) : Util.formatDuration(entry.duration)) + ")" : ""
     // with no timer, "No timers running" is centered in the bar, shrunk to fit its width
     readonly property int emptyFontSize: Math.max(6, Math.min(Math.round(barHeight * 0.62),
         Math.floor(100 * (cfg.barWidth - Math.max(4, barHeight / 2)) / Math.max(1, emptyMetrics.width))))
@@ -61,41 +62,15 @@ Rectangle {
             opacity: frame.finished && frame.app.blink ? 0.3 : 1
         }
 
-        // Name drawn above the bar (higher z) so it can be larger and overlap it
         Item {
             Layout.fillHeight: true
             Layout.fillWidth: frame.stretch
             Layout.preferredWidth: frame.barAreaWidth
             Layout.maximumWidth: frame.stretch ? Number.POSITIVE_INFINITY : frame.barAreaWidth
 
-            Text {
-                z: 1
-                anchors.top: parent.top
-                anchors.left: parent.left
-                anchors.right: parent.right
-                anchors.leftMargin: 2
-                visible: !!frame.entry && !frame.finished
-                text: frame.entry ? frame.entry.name : ""
-                color: frame.contrastColor
-                font.pixelSize: cfg.nameFontSize
-                font.bold: cfg.nameBold
-                elide: Text.ElideRight
-
-                layer.enabled: true
-                layer.effect: MultiEffect {
-                    shadowEnabled: true
-                    shadowColor: Gradients.prefersDark(frame.baseColor) ? "white" : "black"
-                    shadowOpacity: 0.8
-                    shadowBlur: 0.3
-                    shadowHorizontalOffset: 0
-                    shadowVerticalOffset: 1
-                    blurMax: 6
-                }
-            }
-
+            // name on the left inside the bar, time on the right
             GradientBar {
-                // under the name; vertically centered when there is no name to show
-                y: !frame.entry || frame.finished ? Math.round((parent.height - height) / 2) : parent.height - height
+                anchors.verticalCenter: parent.verticalCenter
                 anchors.left: parent.left
                 anchors.right: parent.right
                 height: frame.barHeight
@@ -104,14 +79,18 @@ Rectangle {
                 text: !frame.entry ? i18n("No timers running")
                     : frame.finished ? frame.finishedText
                     : Util.formatTime(frame.app.remainingOf(frame.entry))
-                z: -1 // outer shadows and glow go under the name
+                leftText: frame.entry && !frame.finished ? frame.entry.name : ""
+                leftFontSize: cfg.nameFontSize
+                fontWeight: cfg.barFontWeight
+                textColor: cfg.barTextColor
+                outlineColor: cfg.barTextOutlineColor
+                outlineWidth: cfg.barTextOutlineWidth
                 trackColor: cfg.trackColor
                 borderColor: cfg.barBorderColor
                 borderWidth: cfg.barBorderWidth
                 shadows: Util.parseShadows(cfg.barShadows)
                 glow: ({ enabled: cfg.glowEnabled, useGradient: cfg.glowUseGradient, color: cfg.glowColor,
                          radius: cfg.glowRadius, strength: cfg.glowStrength, opacity: cfg.glowOpacity / 100 })
-                baseColor: Qt.rgba(frame.baseColor.r, frame.baseColor.g, frame.baseColor.b, 1)
                 radius: cfg.barRadius
                 // when finished: bold text at 95% of the bar height in the configured color
                 fontSize: !frame.entry ? frame.emptyFontSize
@@ -124,7 +103,8 @@ Rectangle {
         }
 
         IconButton {
-            visible: !!frame.entry && !frame.finished
+            // an alarm is tied to a time of day, so it is not paused
+            visible: !!frame.entry && !frame.finished && !frame.isAlarm
             size: frame.buttonSize
             borderColor: cfg.borderColor
             iconName: !frame.entry ? "" : frame.entry.paused ? "media-playback-start" : "media-playback-pause"

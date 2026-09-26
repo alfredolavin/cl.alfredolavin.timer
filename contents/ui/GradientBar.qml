@@ -4,13 +4,16 @@ import QtQuick.Effects
 import "code/gradients.js" as Gradients
 import "code/util.js" as Util
 
-// Rounded progress bar filled with a CSS-style gradient and a centered, contrast-aware label
+// Rounded progress bar filled with a CSS-style gradient and outlined Rubik labels:
+// `text` centered, or right-aligned when `leftText` is shown on the left
 Item {
     id: bar
 
     property var stops: []
     property real progress: 0
     property string text
+    property string leftText
+    property int leftFontSize: 9
     property color trackColor: Qt.rgba(0, 0, 0, 0.35)
     property color borderColor: "transparent"
     property int borderWidth: 0
@@ -18,21 +21,21 @@ Item {
     property var shadows: []
     // {enabled, useGradient, color, radius, strength, opacity}
     property var glow: null
-    // Opaque color behind the bar, used to pick the label color
-    property color baseColor: "black"
     property real radius: 4
     property int fontSize: 0
-    // Fixed label color; null picks black or white for contrast
+    property int fontWeight: 800
+    property color textColor: "white"
+    property color outlineColor: "black"
+    property int outlineWidth: 1
+    // Color of `text` only, overriding textColor (e.g. the "time is up" message)
     property var labelColor: null
     property bool shadow: true
     property bool blink: false
 
     readonly property real clamped: Math.max(0, Math.min(1, progress))
-    // Color right under the label decides black or white text
-    readonly property var underLabel: clamped >= 0.5
-        ? Gradients.over(Gradients.colorAt(stops, 0.5), { r: baseColor.r, g: baseColor.g, b: baseColor.b, a: 1 })
-        : Gradients.over({ r: trackColor.r, g: trackColor.g, b: trackColor.b, a: trackColor.a }, { r: baseColor.r, g: baseColor.g, b: baseColor.b, a: 1 })
-    readonly property bool darkText: Gradients.prefersDark(underLabel)
+    readonly property bool split: leftText.length > 0
+    // Horizontal padding of the labels, clear of the rounded ends and fitting the outline
+    readonly property real inset: 2 + outlineWidth + Math.min(radius, height / 2) / 2
     readonly property bool glowOn: !!glow && glow.enabled && glow.radius > 0 && glow.opacity > 0
     // Room around the bar for outer shadows and glow
     readonly property int pad: {
@@ -181,33 +184,67 @@ Item {
     onWidthChanged: canvas.requestPaint()
     onHeightChanged: canvas.requestPaint()
 
-    Text {
-        id: label
-        anchors.centerIn: parent
-        // shrinks to the bar's real size minus 2 px padding on each side
-        width: Math.max(1, bar.width - 4)
-        height: Math.max(1, bar.height - 4)
-        horizontalAlignment: Text.AlignHCenter
-        verticalAlignment: Text.AlignVCenter
-        fontSizeMode: Text.Fit
-        minimumPixelSize: 6
-        text: bar.text
-        visible: text.length > 0
-        opacity: bar.blink ? 0.25 : 1
-        color: bar.labelColor ?? (bar.darkText ? "black" : "white")
-        font.pixelSize: bar.fontSize > 0 ? bar.fontSize : Math.max(7, Math.round(bar.height * 0.62))
-        font.bold: true
-        font.features: { "tnum": 1 }
+    // Bundled Rubik (variable weight, Latin only); FontLoader caches it, so every bar shares one copy
+    FontLoader {
+        id: rubik
+        source: Qt.resolvedUrl("../fonts/Rubik.ttf")
+    }
 
-        layer.enabled: bar.shadow && visible
+    readonly property string fontFamily: rubik.font.family
+
+    // inline components can't see this file's ids, so the bar is passed in as `b`
+    component BarText: OutlinedText {
+        required property Item b
+        anchors.verticalCenter: parent.verticalCenter
+        // the outline stays inside the 2 px padding too
+        height: Math.max(1, b.height - 4 - 2 * b.outlineWidth)
+        minimumPixelSize: 6
+        opacity: b.blink ? 0.25 : 1
+        outlineColor: b.outlineColor
+        outlineWidth: b.outlineWidth
+        font.family: b.fontFamily
+        font.weight: b.fontWeight
+        font.variableAxes: { "wght": b.fontWeight }
+
+        layer.enabled: b.shadow && visible
         layer.effect: MultiEffect {
             shadowEnabled: true
-            shadowColor: bar.darkText ? "white" : "black"
+            shadowColor: "black"
             shadowOpacity: 0.9
             shadowBlur: 0.35
             shadowHorizontalOffset: 1
             shadowVerticalOffset: 1
             blurMax: 8
         }
+    }
+
+    BarText {
+        id: nameLabel
+        b: bar
+        anchors.left: parent.left
+        anchors.leftMargin: bar.inset
+        // whatever the time on the right leaves free
+        width: Math.max(0, bar.width - 2 * bar.inset - (label.visible ? label.contentWidth + bar.inset : 0))
+        fontSizeMode: Text.VerticalFit
+        elide: Text.ElideRight
+        text: bar.leftText
+        visible: bar.split && width > 0
+        color: bar.textColor
+        font.pixelSize: bar.leftFontSize
+    }
+
+    BarText {
+        id: label
+        b: bar
+        anchors.horizontalCenter: parent.horizontalCenter
+        // shrinks to the bar's real size minus the padding on each side (2 px when centered)
+        width: Math.max(1, bar.width - (bar.split ? 2 * bar.inset : 4 + 2 * bar.outlineWidth))
+        horizontalAlignment: bar.split ? Text.AlignRight : Text.AlignHCenter
+        fontSizeMode: Text.Fit
+        text: bar.text
+        visible: text.length > 0
+        color: bar.labelColor ?? bar.textColor
+        font.pixelSize: bar.fontSize > 0 ? bar.fontSize : Math.max(7, Math.round(bar.height * 0.62))
+        font.features: { "tnum": 1 }
     }
 }

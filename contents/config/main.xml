@@ -15,7 +15,6 @@
         <entry name="useThemeIconColor" type="Bool"><default>true</default></entry>
         <entry name="iconColor" type="Color"><default>#ffffff</default></entry>
         <entry name="nameFontSize" type="Int"><default>9</default></entry>
-        <entry name="nameBold" type="Bool"><default>true</default></entry>
         <entry name="barWidth" type="Int"><default>100</default></entry>
         <entry name="barHeightPercent" type="Int"><default>60</default></entry>
         <entry name="barRadius" type="Int"><default>4</default></entry>
@@ -40,6 +39,11 @@
         <entry name="glowRadius" type="Int"><default>6</default></entry>
         <entry name="glowStrength" type="Int"><default>1</default></entry>
         <entry name="glowOpacity" type="Int"><default>70</default></entry>
+        <!-- text inside the bar: bundled Rubik at this weight (300-900), filled and outlined -->
+        <entry name="barFontWeight" type="Int"><default>800</default></entry>
+        <entry name="barTextColor" type="Color"><default>#ffffff</default></entry>
+        <entry name="barTextOutlineColor" type="Color"><default>#000000</default></entry>
+        <entry name="barTextOutlineWidth" type="Int"><default>1</default></entry>
     </group>
 
     <group name="Timers">

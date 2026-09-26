@@ -830,7 +830,6 @@ KCM.SimpleKCM {
                         borderColor: page.cfg_barBorderColor
                         borderWidth: page.cfg_barBorderWidth
                         shadows: Util.parseShadows(page.cfg_barShadows)
-                        baseColor: Kirigami.Theme.backgroundColor
                         shadow: page.cfg_textShadow
                     }
                     QQC2.Slider {

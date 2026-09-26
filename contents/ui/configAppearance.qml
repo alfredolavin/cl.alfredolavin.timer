@@ -18,7 +18,6 @@ KCM.SimpleKCM {
     property alias cfg_useThemeIconColor: autoIconColor.checked
     property alias cfg_iconColor: iconColor.color
     property alias cfg_nameFontSize: nameFontSize.value
-    property alias cfg_nameBold: nameBold.checked
     property alias cfg_barWidth: barWidth.value
     property alias cfg_barHeightPercent: barHeight.value
     property alias cfg_barRadius: barRadius.value
@@ -52,7 +51,6 @@ KCM.SimpleKCM {
         Kirigami.Separator { Kirigami.FormData.isSection: true; Kirigami.FormData.label: i18n("Name and progress bar") }
 
         QQC2.SpinBox { id: nameFontSize; Kirigami.FormData.label: i18n("Name font size (px):"); from: 5; to: 40 }
-        QQC2.CheckBox { id: nameBold; text: i18n("Bold name") }
         QQC2.SpinBox { id: barWidth; Kirigami.FormData.label: i18n("Bar width (px):"); from: 30; to: 600 }
         RowLayout {
             Kirigami.FormData.label: i18n("Bar height:")

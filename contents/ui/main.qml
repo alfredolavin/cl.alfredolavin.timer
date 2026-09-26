@@ -85,18 +85,37 @@ PlasmoidItem {
         reorder();
     }
 
-    function start(timerId) {
-        const t = timers.find(x => x.id === timerId);
-        if (!t)
-            return;
+    // An alarm's duration is the time from now until its time of day, so progress works the same
+    function launch(t) {
         now = Date.now();
+        const end = t.kind === "alarm" ? Util.nextOccurrence(t.at, now) : now + t.duration * 1000;
         mutate(list => list.push(Object.assign({}, t, {
             uid: Util.newId(),
-            end: now + t.duration * 1000,
-            remaining: t.duration * 1000,
+            duration: (end - now) / 1000,
+            end: end,
+            remaining: end - now,
             paused: false,
             finished: false
         })));
+    }
+
+    function start(timerId) {
+        const t = timers.find(x => x.id === timerId);
+        if (t)
+            launch(t);
+    }
+
+    // One-off timer or alarm from the popup's quick entry, with default settings
+    function startQuick(q) {
+        const isAlarm = q.kind === "alarm";
+        launch(Util.normalize({
+            kind: q.kind,
+            at: q.at,
+            duration: q.duration,
+            name: isAlarm ? i18n("Alarm %1", Util.formatClock(q.at)) : i18n("Timer %1", Util.formatDuration(q.duration)),
+            icon: isAlarm ? "f0020" : "f051b",
+            message: i18n("Time's up!!")
+        }));
     }
 
     function togglePause(uid) {

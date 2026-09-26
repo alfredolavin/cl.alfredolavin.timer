@@ -21,6 +21,10 @@ KCM.SimpleKCM {
     property alias cfg_glowRadius: glowRadius.value
     property alias cfg_glowStrength: glowStrength.value
     property alias cfg_glowOpacity: glowOpacity.value
+    property alias cfg_barFontWeight: weightSlider.value
+    property alias cfg_barTextColor: textColorButton.color
+    property alias cfg_barTextOutlineColor: outlineColorButton.color
+    property alias cfg_barTextOutlineWidth: outlineWidthSpin.value
 
     // Read only here, used by the preview
     property color cfg_borderColor
@@ -29,6 +33,8 @@ KCM.SimpleKCM {
     property int cfg_barWidth
     property int cfg_barHeightPercent
     property bool cfg_textShadow
+    property int cfg_nameFontSize
+    property int cfg_timeFontSize
     property string cfg_gradientsCss
 
     readonly property var gradients: Gradients.parse(cfg_gradientsCss || Gradients.defaultCss)
@@ -113,8 +119,13 @@ KCM.SimpleKCM {
                     borderWidth: barBorderWidth.value
                     shadows: page.shadows
                     glow: page.glow
-                    baseColor: stage.opaque
                     shadow: page.cfg_textShadow
+                    leftText: i18n("Tea")
+                    leftFontSize: Math.round(height * 0.45)
+                    fontWeight: weightSlider.value
+                    textColor: textColorButton.color
+                    outlineColor: outlineColorButton.color
+                    outlineWidth: outlineWidthSpin.value
                 }
 
                 RowLayout {
@@ -135,8 +146,14 @@ KCM.SimpleKCM {
                         borderWidth: barBorderWidth.value
                         shadows: page.shadows
                         glow: page.glow
-                        baseColor: stage.opaque
                         shadow: page.cfg_textShadow
+                        leftText: i18n("Tea")
+                        leftFontSize: page.cfg_nameFontSize
+                        fontSize: page.cfg_timeFontSize
+                        fontWeight: weightSlider.value
+                        textColor: textColorButton.color
+                        outlineColor: outlineColorButton.color
+                        outlineWidth: outlineWidthSpin.value
                     }
                 }
             }
@@ -185,6 +202,24 @@ KCM.SimpleKCM {
             KQControls.ColorButton { id: trackColor; Kirigami.FormData.label: i18n("Background color:"); showAlphaChannel: true }
             KQControls.ColorButton { id: barBorderColor; Kirigami.FormData.label: i18n("Border color:"); showAlphaChannel: true }
             QQC2.SpinBox { id: barBorderWidth; Kirigami.FormData.label: i18n("Border width:"); from: 0; to: 8 }
+
+            Kirigami.Separator { Kirigami.FormData.isSection: true; Kirigami.FormData.label: i18n("Text (name, time and messages)") }
+
+            RowLayout {
+                Kirigami.FormData.label: i18n("Font weight:")
+                QQC2.Slider { id: weightSlider; from: 300; to: 900; stepSize: 50; Layout.preferredWidth: Kirigami.Units.gridUnit * 10 }
+                QQC2.Label { text: i18n("%1 (Rubik)", weightSlider.value) }
+            }
+            KQControls.ColorButton { id: textColorButton; Kirigami.FormData.label: i18n("Text color:"); showAlphaChannel: false }
+            KQControls.ColorButton { id: outlineColorButton; Kirigami.FormData.label: i18n("Outline color:"); showAlphaChannel: true }
+            QQC2.SpinBox {
+                id: outlineWidthSpin
+                Kirigami.FormData.label: i18n("Outline width:")
+                from: 0
+                to: 3
+                textFromValue: v => v === 0 ? i18n("None") : i18n("%1 px", v)
+                valueFromText: t => parseInt(t) || 0
+            }
 
             Kirigami.Separator { Kirigami.FormData.isSection: true; Kirigami.FormData.label: i18n("Glow") }
 

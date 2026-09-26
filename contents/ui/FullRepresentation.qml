@@ -70,6 +70,60 @@ PlasmaExtras.Representation {
         }
     }
 
+    // Quick one-off timer ("25", "1h30", "90s") or alarm ("14:30", "7pm"), started with the + button or Enter
+    footer: PlasmaExtras.PlasmoidHeading {
+        contentItem: Item {
+            implicitWidth: quickRow.implicitWidth
+            implicitHeight: quickRow.implicitHeight
+
+            RowLayout {
+                id: quickRow
+                anchors.fill: parent
+                spacing: Kirigami.Units.smallSpacing
+
+                readonly property var parsed: Util.parseQuick(quickField.text)
+
+                function launch() {
+                    if (!parsed)
+                        return;
+                    full.app.expanded = false;
+                    full.app.startQuick(parsed);
+                    quickField.clear();
+                }
+
+                PlasmaComponents.TextField {
+                    id: quickField
+                    Layout.fillWidth: true
+                    placeholderText: i18n("Quick timer or alarm: 25, 1h30, 90s, 14:30, 7pm…")
+                    color: text.length && !quickRow.parsed ? Kirigami.Theme.negativeTextColor : Kirigami.Theme.textColor
+                    onAccepted: quickRow.launch()
+                }
+                PlasmaComponents.Label {
+                    visible: !!quickRow.parsed
+                    opacity: 0.7
+                    text: !quickRow.parsed ? ""
+                        : quickRow.parsed.kind === "alarm"
+                            ? i18n("Alarm at %1, in %2", Util.formatClock(quickRow.parsed.at),
+                                   Util.formatDuration(Math.round((Util.nextOccurrence(quickRow.parsed.at, Date.now()) - Date.now()) / 60000) * 60))
+                            : i18n("Timer, %1", Util.formatDuration(quickRow.parsed.duration))
+                }
+                PlasmaComponents.ToolButton {
+                    icon.name: "list-add"
+                    display: PlasmaComponents.AbstractButton.IconOnly
+                    text: i18n("Start now")
+                    enabled: !!quickRow.parsed
+                    PlasmaComponents.ToolTip.text: text
+                    PlasmaComponents.ToolTip.visible: hovered
+                    onClicked: quickRow.launch()
+                }
+            }
+
+            AlarmSilencer {
+                app: full.app
+            }
+        }
+    }
+
     AlarmSilencer {
         app: full.app
     }
@@ -159,7 +213,8 @@ PlasmaExtras.Representation {
                             }
                             PlasmaComponents.Label {
                                 Layout.fillWidth: true
-                                text: Util.formatDuration(item.modelData.duration)
+                                text: item.modelData.kind === "alarm" ? i18n("Alarm at %1", Util.formatClock(item.modelData.at))
+                                                                      : Util.formatDuration(item.modelData.duration)
                                 opacity: 0.7
                                 font: Kirigami.Theme.smallFont
                             }
