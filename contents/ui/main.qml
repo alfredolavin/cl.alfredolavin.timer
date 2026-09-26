@@ -114,6 +114,7 @@ PlasmoidItem {
             duration: q.duration,
             name: isAlarm ? i18n("Alarm %1", Util.formatClock(q.at)) : i18n("Timer %1", Util.formatDuration(q.duration)),
             icon: isAlarm ? "f0020" : "f051b",
+            gradient: cfg.quickGradient,
             message: i18n("Time's up!!")
         }));
     }

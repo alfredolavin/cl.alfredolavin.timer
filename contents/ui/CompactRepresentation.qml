@@ -25,7 +25,7 @@ Item {
 
         IconButton {
             size: frame.buttonSize
-            borderColor: Plasmoid.configuration.borderColor
+            borderColor: frame.outlineColor
             iconName: compact.app.expanded ? "go-down" : "go-up"
             tooltip: compact.app.others.length
                 ? i18np("%1 more running timer", "%1 more running timers", compact.app.others.length)

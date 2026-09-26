@@ -11,6 +11,15 @@
         <entry name="backgroundTransparency" type="Int"><default>30</default></entry>
         <entry name="padding" type="Int"><default>2</default></entry>
         <entry name="spacing" type="Int"><default>4</default></entry>
+        <!-- background and outlines take the gradient color at the end of the bar's fill;
+             luminosity -100 (black) .. 100 (white), chroma -100 (gray) .. 100 (double), opacity in % -->
+        <entry name="linkColors" type="Bool"><default>false</default></entry>
+        <entry name="linkedBgOpacity" type="Int"><default>60</default></entry>
+        <entry name="linkedBgLuminosity" type="Int"><default>-50</default></entry>
+        <entry name="linkedBgChroma" type="Int"><default>0</default></entry>
+        <entry name="linkedOutlineOpacity" type="Int"><default>100</default></entry>
+        <entry name="linkedOutlineLuminosity" type="Int"><default>20</default></entry>
+        <entry name="linkedOutlineChroma" type="Int"><default>0</default></entry>
         <entry name="iconSize" type="Int"><default>32</default></entry>
         <entry name="useThemeIconColor" type="Bool"><default>true</default></entry>
         <entry name="iconColor" type="Color"><default>#ffffff</default></entry>
@@ -49,6 +58,8 @@
     <group name="Timers">
         <!-- JSON array of timer definitions; empty means built-in defaults -->
         <entry name="timers" type="String"><default></default></entry>
+        <!-- gradient of one-off timers and alarms from the popup's quick entry; empty = the first gradient -->
+        <entry name="quickGradient" type="String"><default></default></entry>
         <!-- CSS gradients; empty means built-in defaults -->
         <entry name="gradientsCss" type="String"><default></default></entry>
         <!-- visibility mode of the hosting panel while it is forced visible by a finished timer; -1 = not forced -->

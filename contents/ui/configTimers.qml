@@ -12,6 +12,7 @@ KCM.SimpleKCM {
 
     property string cfg_timers
     property string cfg_gradientsCss
+    property string cfg_quickGradient
 
     readonly property var gradients: Gradients.parse(cfg_gradientsCss || Gradients.defaultCss)
     readonly property int idx: list.currentIndex
@@ -248,6 +249,29 @@ KCM.SimpleKCM {
                         }
                     }
                 }
+            }
+
+            // gradient of the one-off timers and alarms started from the popup's quick entry
+            QQC2.Label {
+                Layout.fillWidth: true
+                Layout.topMargin: Kirigami.Units.largeSpacing
+                text: i18n("Gradient of quick timers and alarms:")
+                elide: Text.ElideRight
+            }
+            QQC2.ComboBox {
+                id: quickGradientCombo
+                Layout.fillWidth: true
+                model: page.gradients
+                textRole: "name"
+                currentIndex: Math.max(0, page.gradients.findIndex(g => g.name === page.cfg_quickGradient))
+                onActivated: index => page.cfg_quickGradient = page.gradients[index].name
+            }
+            GradientBar {
+                Layout.fillWidth: true
+                Layout.preferredHeight: Kirigami.Units.gridUnit * 0.6
+                radius: 3
+                progress: 1
+                stops: page.gradients.length ? page.gradients[Math.max(0, quickGradientCombo.currentIndex)].stops : []
             }
         }
 

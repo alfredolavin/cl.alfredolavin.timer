@@ -43,8 +43,19 @@ Rectangle {
     implicitHeight: Math.max(cfg.iconSize, cfg.buttonIconSize + 2 * (cfg.buttonBorderWidth + 1)) + 2 * inset
     radius: cfg.cornerRadius
     border.width: cfg.borderWidth
-    border.color: finished && app.blink ? Kirigami.Theme.negativeTextColor : cfg.borderColor
-    color: Qt.rgba(cfg.borderColor.r, cfg.borderColor.g, cfg.borderColor.b, 1 - cfg.backgroundTransparency / 100)
+    // Gradient color at the end of the fill, when background and outlines follow it
+    readonly property var fillColor: cfg.linkColors && entry ? Gradients.colorAt(gradient.stops, app.progressOf(entry)) : null
+    readonly property color outlineColor: fillColor
+        ? linked(cfg.linkedOutlineLuminosity, cfg.linkedOutlineChroma, cfg.linkedOutlineOpacity) : cfg.borderColor
+
+    function linked(luminosity, chroma, opacity) {
+        const c = Gradients.shade(fillColor, luminosity, chroma);
+        return Qt.rgba(c.r, c.g, c.b, opacity / 100);
+    }
+
+    border.color: finished && app.blink ? Kirigami.Theme.negativeTextColor : outlineColor
+    color: fillColor ? linked(cfg.linkedBgLuminosity, cfg.linkedBgChroma, cfg.linkedBgOpacity)
+                     : Qt.rgba(cfg.borderColor.r, cfg.borderColor.g, cfg.borderColor.b, 1 - cfg.backgroundTransparency / 100)
 
     RowLayout {
         id: row
@@ -106,7 +117,7 @@ Rectangle {
             // an alarm is tied to a time of day, so it is not paused
             visible: !!frame.entry && !frame.finished && !frame.isAlarm
             size: frame.buttonSize
-            borderColor: cfg.borderColor
+            borderColor: frame.outlineColor
             iconName: !frame.entry ? "" : frame.entry.paused ? "media-playback-start" : "media-playback-pause"
             tooltip: !frame.entry ? "" : frame.entry.paused ? i18n("Resume") : i18n("Pause")
             onClicked: frame.app.togglePause(frame.uid)
@@ -115,7 +126,7 @@ Rectangle {
         IconButton {
             visible: !!frame.entry
             size: frame.buttonSize
-            borderColor: cfg.borderColor
+            borderColor: frame.outlineColor
             iconName: "edit-delete"
             tooltip: frame.finished ? i18n("Dismiss") : i18n("Stop and remove")
             onClicked: frame.app.remove(frame.uid)
