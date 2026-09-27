@@ -25,8 +25,8 @@ Item {
     property int fontSize: 0
     property int fontWeight: 800
     property color textColor: "white"
+    // 1 px outline around the text; transparent for none
     property color outlineColor: "black"
-    property int outlineWidth: 1
     // Color of `text` only, overriding textColor (e.g. the "time is up" message)
     property var labelColor: null
     property bool shadow: true
@@ -35,7 +35,7 @@ Item {
     readonly property real clamped: Math.max(0, Math.min(1, progress))
     readonly property bool split: leftText.length > 0
     // Horizontal padding of the labels, clear of the rounded ends and fitting the outline
-    readonly property real inset: 2 + outlineWidth + Math.min(radius, height / 2) / 2
+    readonly property real inset: 3 + Math.min(radius, height / 2) / 2
     readonly property bool glowOn: !!glow && glow.enabled && glow.radius > 0 && glow.opacity > 0
     // Room around the bar for outer shadows and glow
     readonly property int pad: {
@@ -197,16 +197,18 @@ Item {
 
     readonly property string fontFamily: rubik.font.family
 
-    // inline components can't see this file's ids, so the bar is passed in as `b`
-    component BarText: OutlinedText {
+    // inline components can't see this file's ids, so the bar is passed in as `b`.
+    // One Text with Qt's own 1 px outline
+    component BarText: Text {
         required property Item b
         anchors.verticalCenter: parent.verticalCenter
         // the outline stays inside the 2 px padding too
-        height: Math.max(1, b.height - 4 - 2 * b.outlineWidth)
+        height: Math.max(1, b.height - 6)
+        verticalAlignment: Text.AlignVCenter
         minimumPixelSize: 6
         opacity: b.blink ? 0.25 : 1
-        outlineColor: b.outlineColor
-        outlineWidth: b.outlineWidth
+        style: b.outlineColor.a > 0 ? Text.Outline : Text.Normal
+        styleColor: b.outlineColor
         font.family: b.fontFamily
         font.weight: b.fontWeight
         font.variableAxes: { "wght": b.fontWeight }
@@ -243,7 +245,7 @@ Item {
         b: bar
         anchors.horizontalCenter: parent.horizontalCenter
         // shrinks to the bar's real size minus the padding on each side (2 px when centered)
-        width: Math.max(1, bar.width - (bar.split ? 2 * bar.inset : 4 + 2 * bar.outlineWidth))
+        width: Math.max(1, bar.width - (bar.split ? 2 * bar.inset : 6))
         horizontalAlignment: bar.split ? Text.AlignRight : Text.AlignHCenter
         fontSizeMode: Text.Fit
         text: bar.text

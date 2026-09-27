@@ -45,14 +45,17 @@ Rectangle {
     radius: cfg.cornerRadius
     border.width: cfg.borderWidth
     readonly property real fill: entry ? app.progressOf(entry) : 0
+    // The fill in 1/256 steps for colors that follow it: `fill` changes on every tick, and the
+    // colors (and the icon and bar repaints that depend on them) only need to follow visible steps
+    readonly property real colorFill: Math.round(fill * 256) / 256
     // A configurable color (code/colorspec.js) resolved with this frame's gradient and fill
     function spec(str) {
-        const c = ColorSpec.resolveString(str, gradient.stops, fill);
+        const c = ColorSpec.resolveString(str, gradient.stops, colorFill);
         return Qt.rgba(c.r, c.g, c.b, c.a);
     }
     readonly property color borderSpecColor: spec(cfg.borderColor)
     // Gradient color at the end of the fill, when background and outlines follow it
-    readonly property var fillColor: cfg.linkColors && entry ? Gradients.colorAt(gradient.stops, fill) : null
+    readonly property var fillColor: cfg.linkColors && entry ? Gradients.colorAt(gradient.stops, colorFill) : null
     readonly property color outlineColor: fillColor
         ? linked(cfg.linkedOutlineLuminosity, cfg.linkedOutlineChroma, cfg.linkedOutlineOpacity) : borderSpecColor
 
@@ -103,7 +106,6 @@ Rectangle {
                 fontWeight: cfg.barFontWeight
                 textColor: frame.spec(cfg.barTextColor)
                 outlineColor: frame.spec(cfg.barTextOutlineColor)
-                outlineWidth: cfg.barTextOutlineWidth
                 trackColor: frame.spec(cfg.trackColor)
                 borderColor: frame.spec(cfg.barBorderColor)
                 borderWidth: cfg.barBorderWidth

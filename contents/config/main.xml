@@ -55,7 +55,6 @@
         <entry name="barFontWeight" type="Int"><default>800</default></entry>
         <entry name="barTextColor" type="String"><default>#ffffff</default></entry>
         <entry name="barTextOutlineColor" type="String"><default>#000000</default></entry>
-        <entry name="barTextOutlineWidth" type="Int"><default>1</default></entry>
     </group>
 
     <group name="Timers">

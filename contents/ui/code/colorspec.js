@@ -69,9 +69,26 @@ function resolve(spec, stops, progress) {
     return { r: out.r, g: out.g, b: out.b, a: clamp(base.a * spec.a / 100, 0, 1) };
 }
 
+// Parsed specs by stored string: frames resolve their colors several times a second.
+// Specs are never modified after parsing, so they can be shared.
+var parsed = {}, parsedCount = 0;
+
+function parseCached(str) {
+    var key = String(str || "");
+    var spec = parsed[key];
+    if (!spec) {
+        if (++parsedCount > 256) {   // editing in the settings creates many; start over now and then
+            parsed = {};
+            parsedCount = 1;
+        }
+        spec = parsed[key] = parse(key);
+    }
+    return spec;
+}
+
 // Shortcut for stored strings
 function resolveString(str, stops, progress) {
-    return resolve(parse(str), stops, progress);
+    return resolve(parseCached(str), stops, progress);
 }
 
 function css(c) {

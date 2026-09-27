@@ -24,7 +24,6 @@ KCM.SimpleKCM {
     property alias cfg_barFontWeight: weightSlider.value
     property alias cfg_barTextColor: textColorButton.value
     property alias cfg_barTextOutlineColor: outlineColorButton.value
-    property alias cfg_barTextOutlineWidth: outlineWidthSpin.value
 
     // Read only here, used by the preview
     property string cfg_borderColor
@@ -133,7 +132,6 @@ KCM.SimpleKCM {
                     fontWeight: weightSlider.value
                     textColor: page.col(textColorButton.value)
                     outlineColor: page.col(outlineColorButton.value)
-                    outlineWidth: outlineWidthSpin.value
                 }
 
                 RowLayout {
@@ -161,8 +159,7 @@ KCM.SimpleKCM {
                         fontWeight: weightSlider.value
                         textColor: page.col(textColorButton.value)
                         outlineColor: page.col(outlineColorButton.value)
-                        outlineWidth: outlineWidthSpin.value
-                    }
+                        }
                 }
             }
         }
@@ -240,17 +237,9 @@ KCM.SimpleKCM {
             ColorSpecButton {
                 id: outlineColorButton
                 Kirigami.FormData.label: i18n("Outline color:")
-                dialogTitle: i18n("Text outline color")
+                dialogTitle: i18n("Text outline color (1 px; fully transparent for none)")
                 gradients: page.gradients
                 runningState: page.cfg_runningState
-            }
-            QQC2.SpinBox {
-                id: outlineWidthSpin
-                Kirigami.FormData.label: i18n("Outline width:")
-                from: 0
-                to: 3
-                textFromValue: v => v === 0 ? i18n("None") : i18n("%1 px", v)
-                valueFromText: t => parseInt(t) || 0
             }
 
             Kirigami.Separator { Kirigami.FormData.isSection: true; Kirigami.FormData.label: i18n("Glow") }
