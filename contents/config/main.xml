@@ -4,9 +4,12 @@
       xsi:schemaLocation="http://www.kde.org/standards/kcfg/1.0 http://www.kde.org/standards/kcfg/1.0/kcfg.xsd">
     <kcfgfile name=""/>
 
+    <!-- Color entries are configurable colors: a plain color ("#rrggbb", "#aarrggbb" or "r,g,b[,a]") or JSON
+         {src: fixed|begin|end|current, color, l, c, a} taking it from the active gradient; see contents/ui/code/colorspec.js -->
+
     <group name="Appearance">
         <entry name="cornerRadius" type="Int"><default>6</default></entry>
-        <entry name="borderColor" type="Color"><default>#3daee9</default></entry>
+        <entry name="borderColor" type="String"><default>#3daee9</default></entry>
         <entry name="borderWidth" type="Int"><default>2</default></entry>
         <entry name="backgroundTransparency" type="Int"><default>30</default></entry>
         <entry name="padding" type="Int"><default>2</default></entry>
@@ -22,7 +25,7 @@
         <entry name="linkedOutlineChroma" type="Int"><default>0</default></entry>
         <entry name="iconSize" type="Int"><default>32</default></entry>
         <entry name="useThemeIconColor" type="Bool"><default>true</default></entry>
-        <entry name="iconColor" type="Color"><default>#ffffff</default></entry>
+        <entry name="iconColor" type="String"><default>#ffffff</default></entry>
         <entry name="nameFontSize" type="Int"><default>9</default></entry>
         <entry name="barWidth" type="Int"><default>100</default></entry>
         <entry name="barHeightPercent" type="Int"><default>60</default></entry>
@@ -33,25 +36,25 @@
         <entry name="buttonBorderWidth" type="Int"><default>1</default></entry>
         <entry name="buttonRadius" type="Int"><default>4</default></entry>
         <!-- color of the "time is up" text drawn over the progress bar -->
-        <entry name="finishedTextColor" type="Color"><default>#ff0000</default></entry>
+        <entry name="finishedTextColor" type="String"><default>#ff0000</default></entry>
     </group>
 
     <group name="ProgressBar">
-        <entry name="trackColor" type="Color"><default>#5a000000</default></entry>
-        <entry name="barBorderColor" type="Color"><default>#59ffffff</default></entry>
+        <entry name="trackColor" type="String"><default>#5a000000</default></entry>
+        <entry name="barBorderColor" type="String"><default>#59ffffff</default></entry>
         <entry name="barBorderWidth" type="Int"><default>1</default></entry>
         <!-- JSON array of {enabled, x, y, blur, spread, color, inset} -->
         <entry name="barShadows" type="String"><default>[{"enabled":true,"x":0,"y":1,"blur":3,"spread":0,"color":"#80000000","inset":false},{"enabled":true,"x":0,"y":1,"blur":2,"spread":0,"color":"#73000000","inset":true}]</default></entry>
         <entry name="glowEnabled" type="Bool"><default>true</default></entry>
         <entry name="glowUseGradient" type="Bool"><default>true</default></entry>
-        <entry name="glowColor" type="Color"><default>#3daee9</default></entry>
+        <entry name="glowColor" type="String"><default>#3daee9</default></entry>
         <entry name="glowRadius" type="Int"><default>6</default></entry>
         <entry name="glowStrength" type="Int"><default>1</default></entry>
         <entry name="glowOpacity" type="Int"><default>70</default></entry>
         <!-- text inside the bar: bundled Rubik at this weight (300-900), filled and outlined -->
         <entry name="barFontWeight" type="Int"><default>800</default></entry>
-        <entry name="barTextColor" type="Color"><default>#ffffff</default></entry>
-        <entry name="barTextOutlineColor" type="Color"><default>#000000</default></entry>
+        <entry name="barTextColor" type="String"><default>#ffffff</default></entry>
+        <entry name="barTextOutlineColor" type="String"><default>#000000</default></entry>
         <entry name="barTextOutlineWidth" type="Int"><default>1</default></entry>
     </group>
 

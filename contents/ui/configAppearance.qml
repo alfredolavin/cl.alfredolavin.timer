@@ -3,7 +3,6 @@ import QtQuick.Controls as QQC2
 import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 import org.kde.kcmutils as KCM
-import org.kde.kquickcontrols as KQControls
 
 import "code/gradients.js" as Gradients
 import "code/util.js" as Util
@@ -44,8 +43,24 @@ KCM.SimpleKCM {
         return Qt.rgba(c.r, c.g, c.b, opacity / 100);
     }
 
+    // settings of each "follow the progress bar" group, for the sliders' color strips
+    QtObject {
+        id: bgGroup
+        readonly property bool active: linkColors.checked
+        readonly property var sample: page.sample
+        readonly property int l: linkedBgLuminosity.value
+        readonly property int c: linkedBgChroma.value
+    }
+    QtObject {
+        id: outlineGroup
+        readonly property bool active: linkColors.checked
+        readonly property var sample: page.sample
+        readonly property int l: linkedOutlineLuminosity.value
+        readonly property int c: linkedOutlineChroma.value
+    }
+
     property alias cfg_cornerRadius: cornerRadius.value
-    property alias cfg_borderColor: borderColor.color
+    property alias cfg_borderColor: borderColor.value
     property alias cfg_borderWidth: borderWidth.value
     property alias cfg_backgroundTransparency: transparency.value
     property alias cfg_linkColors: linkColors.checked
@@ -59,7 +74,7 @@ KCM.SimpleKCM {
     property alias cfg_spacing: spacing.value
     property alias cfg_iconSize: iconSize.value
     property alias cfg_useThemeIconColor: autoIconColor.checked
-    property alias cfg_iconColor: iconColor.color
+    property alias cfg_iconColor: iconColor.value
     property alias cfg_nameFontSize: nameFontSize.value
     property alias cfg_barWidth: barWidth.value
     property alias cfg_barHeightPercent: barHeight.value
@@ -69,13 +84,19 @@ KCM.SimpleKCM {
     property alias cfg_buttonIconSize: buttonIconSize.value
     property alias cfg_buttonBorderWidth: buttonBorderWidth.value
     property alias cfg_buttonRadius: buttonRadius.value
-    property alias cfg_finishedTextColor: finishedTextColor.color
+    property alias cfg_finishedTextColor: finishedTextColor.value
 
     Kirigami.FormLayout {
         Kirigami.Separator { Kirigami.FormData.isSection: true; Kirigami.FormData.label: i18n("Frame") }
 
         QQC2.SpinBox { id: cornerRadius; Kirigami.FormData.label: i18n("Corner radius:"); from: 0; to: 30 }
-        KQControls.ColorButton { id: borderColor; Kirigami.FormData.label: i18n("Border color:"); showAlphaChannel: false }
+        ColorSpecButton {
+            id: borderColor
+            Kirigami.FormData.label: i18n("Border color:")
+            dialogTitle: i18n("Border and background color")
+            gradients: page.gradients
+            runningState: page.cfg_runningState
+        }
         QQC2.SpinBox { id: borderWidth; Kirigami.FormData.label: i18n("Border width:"); from: 0; to: 10 }
         RowLayout {
             Kirigami.FormData.label: i18n("Background transparency:")
@@ -130,131 +151,40 @@ KCM.SimpleKCM {
             }
         }
 
-        // Slider with a strip above it showing the whole range in real colors
-        component LinkedSlider: RowLayout {
-            id: ls
-            property alias value: slider.value
-            property alias from: slider.from
-            property string kind            // "opacity", "luminosity" or "chroma"
-            property var sample
-            // the other settings of the same group, used for the strip
-            property int luminosity
-            property int chroma
-
-            onSampleChanged: strip.requestPaint()
-            onLuminosityChanged: strip.requestPaint()
-            onChromaChanged: strip.requestPaint()
-
-            ColumnLayout {
-                spacing: 2
-                Canvas {
-                    id: strip
-                    // spans the handle's travel, so each color sits right above its value
-                    Layout.leftMargin: slider.leftPadding + slider.handle.width / 2
-                    Layout.preferredWidth: Math.max(1, slider.availableWidth - slider.handle.width)
-                    Layout.preferredHeight: Kirigami.Units.smallSpacing * 2
-                    opacity: ls.enabled ? 1 : 0.4
-                    onWidthChanged: requestPaint()
-                    onPaint: {
-                        const ctx = getContext("2d");
-                        ctx.reset();
-                        if (!ls.sample || width <= 0)
-                            return;
-                        if (ls.kind === "opacity")
-                            for (let x = 0; x < width; x += 4)
-                                for (let y = 0; y < height; y += 4) {
-                                    ctx.fillStyle = (x + y) % 8 ? "#999999" : "#666666";
-                                    ctx.fillRect(x, y, 4, 4);
-                                }
-                        const g = ctx.createLinearGradient(0, 0, width, 0);
-                        const n = 24;
-                        for (let i = 0; i <= n; ++i) {
-                            const t = i / n, v = ls.from + (100 - ls.from) * t;
-                            const c = Gradients.shade(ls.sample, ls.kind === "luminosity" ? v : ls.luminosity,
-                                                      ls.kind === "chroma" ? v : ls.chroma);
-                            g.addColorStop(t, Gradients.css({ r: c.r, g: c.g, b: c.b, a: ls.kind === "opacity" ? v / 100 : 1 }));
-                        }
-                        ctx.fillStyle = g;
-                        ctx.fillRect(0, 0, width, height);
-                    }
-                }
-                QQC2.Slider {
-                    id: slider
-                    to: 100
-                    stepSize: 5
-                    snapMode: QQC2.Slider.SnapAlways
-                    Kirigami.StyleHints.tickMarkStepSize: -1
-                    Layout.preferredWidth: Kirigami.Units.gridUnit * 10
-                }
-            }
-            QQC2.Label {
-                Layout.alignment: Qt.AlignBottom
-                Layout.minimumWidth: Kirigami.Units.gridUnit * 2.5
-                text: (slider.value > 0 && slider.from < 0 ? "+" : "") + slider.value + (ls.kind === "opacity" ? " %" : "")
+        // each strip shows the slider's whole range for the preview color, with the group's other settings
+        component Linked: ColorStripSlider {
+            required property var group
+            required property string kind
+            enabled: group.active
+            from: kind === "opacity" ? 0 : -100
+            suffix: kind === "opacity" ? " %" : ""
+            checker: kind === "opacity"
+            repaintKey: JSON.stringify([group.sample, group.l, group.c])
+            colorAt: v => {
+                if (!group.sample)
+                    return { r: 0, g: 0, b: 0, a: 0 };
+                const c = Gradients.shade(group.sample, kind === "luminosity" ? v : group.l, kind === "chroma" ? v : group.c);
+                return { r: c.r, g: c.g, b: c.b, a: kind === "opacity" ? v / 100 : 1 };
             }
         }
-        LinkedSlider {
-            id: linkedBgOpacity
-            Kirigami.FormData.label: i18n("Background opacity:")
-            enabled: linkColors.checked
-            kind: "opacity"
-            from: 0
-            sample: page.sample
-            luminosity: linkedBgLuminosity.value
-            chroma: linkedBgChroma.value
-        }
-        LinkedSlider {
-            id: linkedBgLuminosity
-            Kirigami.FormData.label: i18n("Background luminosity:")
-            enabled: linkColors.checked
-            kind: "luminosity"
-            from: -100
-            sample: page.sample
-            chroma: linkedBgChroma.value
-        }
-        LinkedSlider {
-            id: linkedBgChroma
-            Kirigami.FormData.label: i18n("Background chroma:")
-            enabled: linkColors.checked
-            kind: "chroma"
-            from: -100
-            sample: page.sample
-            luminosity: linkedBgLuminosity.value
-        }
-        LinkedSlider {
-            id: linkedOutlineOpacity
-            Kirigami.FormData.label: i18n("Outline opacity:")
-            enabled: linkColors.checked
-            kind: "opacity"
-            from: 0
-            sample: page.sample
-            luminosity: linkedOutlineLuminosity.value
-            chroma: linkedOutlineChroma.value
-        }
-        LinkedSlider {
-            id: linkedOutlineLuminosity
-            Kirigami.FormData.label: i18n("Outline luminosity:")
-            enabled: linkColors.checked
-            kind: "luminosity"
-            from: -100
-            sample: page.sample
-            chroma: linkedOutlineChroma.value
-        }
-        LinkedSlider {
-            id: linkedOutlineChroma
-            Kirigami.FormData.label: i18n("Outline chroma:")
-            enabled: linkColors.checked
-            kind: "chroma"
-            from: -100
-            sample: page.sample
-            luminosity: linkedOutlineLuminosity.value
-        }
+        Linked { id: linkedBgOpacity; Kirigami.FormData.label: i18n("Background opacity:"); group: bgGroup; kind: "opacity" }
+        Linked { id: linkedBgLuminosity; Kirigami.FormData.label: i18n("Background luminosity:"); group: bgGroup; kind: "luminosity" }
+        Linked { id: linkedBgChroma; Kirigami.FormData.label: i18n("Background chroma:"); group: bgGroup; kind: "chroma" }
+        Linked { id: linkedOutlineOpacity; Kirigami.FormData.label: i18n("Outline opacity:"); group: outlineGroup; kind: "opacity" }
+        Linked { id: linkedOutlineLuminosity; Kirigami.FormData.label: i18n("Outline luminosity:"); group: outlineGroup; kind: "luminosity" }
+        Linked { id: linkedOutlineChroma; Kirigami.FormData.label: i18n("Outline chroma:"); group: outlineGroup; kind: "chroma" }
 
         Kirigami.Separator { Kirigami.FormData.isSection: true; Kirigami.FormData.label: i18n("Icon") }
 
         QQC2.SpinBox { id: iconSize; Kirigami.FormData.label: i18n("Icon size:"); from: 8; to: 128 }
         QQC2.CheckBox { id: autoIconColor; Kirigami.FormData.label: i18n("Icon color:"); text: i18n("Automatic (best contrast)") }
-        KQControls.ColorButton { id: iconColor; enabled: !autoIconColor.checked }
+        ColorSpecButton {
+            id: iconColor
+            enabled: !autoIconColor.checked
+            dialogTitle: i18n("Icon color")
+            gradients: page.gradients
+            runningState: page.cfg_runningState
+        }
 
         Kirigami.Separator { Kirigami.FormData.isSection: true; Kirigami.FormData.label: i18n("Name and progress bar") }
 
@@ -274,12 +204,12 @@ KCM.SimpleKCM {
             valueFromText: t => t === i18n("Auto") ? 0 : parseInt(t)
         }
         QQC2.CheckBox { id: textShadow; text: i18n("Contrasting shadow behind the time") }
-        KQControls.ColorButton {
+        ColorSpecButton {
             id: finishedTextColor
             Kirigami.FormData.label: i18n("Time's up text color:")
-            showAlphaChannel: false
-            QQC2.ToolTip.text: i18n("Color of the bold text shown over the bar when a timer ends (set the text per timer)")
-            QQC2.ToolTip.visible: hovered
+            dialogTitle: i18n("Color of the text shown over the bar when a timer ends")
+            gradients: page.gradients
+            runningState: page.cfg_runningState
         }
 
         Kirigami.Separator { Kirigami.FormData.isSection: true; Kirigami.FormData.label: i18n("Buttons") }

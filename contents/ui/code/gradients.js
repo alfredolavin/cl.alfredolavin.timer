@@ -451,14 +451,14 @@ function mix(a, b, t) {
     return { r: a.r + (b.r - a.r) * t, g: a.g + (b.g - a.g) * t, b: a.b + (b.b - a.b) * t, a: a.a + (b.a - a.a) * t };
 }
 
-// Opaque `c` with its OKLCH chroma scaled (-100 gray .. 0 unchanged .. 100 double), then moved
-// toward black (luminosity < 0) or white (> 0); both in -100..100
+// `c` adjusted in OKLCH, alpha kept. Luminosity (-100..100) moves lightness toward 0 or 1; chroma (-100..100)
+// scales it from gray to double. Chroma fades out toward the lightness ends, so -100 / 100 give pure black / white.
 function shade(c, luminosity, chroma) {
-    var k = 1 + clamp(chroma || 0, -100, 100) / 100;
+    var t = clamp(luminosity || 0, -100, 100) / 100;
+    var k = (1 + clamp(chroma || 0, -100, 100) / 100) * (1 - t * t);
     var lab = rgbToOklab(c);
-    var o = oklabToRgb(lab.L, lab.a * k, lab.b * k, 1);
-    var t = clamp(luminosity, -100, 100) / 100;
-    return t < 0 ? mix(o, { r: 0, g: 0, b: 0, a: 1 }, -t) : mix(o, { r: 1, g: 1, b: 1, a: 1 }, t);
+    var L = t < 0 ? lab.L * (1 + t) : lab.L + (1 - lab.L) * t;
+    return oklabToRgb(L, lab.a * k, lab.b * k, c.a === undefined ? 1 : c.a);
 }
 
 function colorAt(stops, pos) {

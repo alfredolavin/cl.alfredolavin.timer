@@ -3,31 +3,32 @@ import QtQuick.Controls as QQC2
 import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 import org.kde.kcmutils as KCM
-import org.kde.kquickcontrols as KQControls
 
 import "code/util.js" as Util
 import "code/gradients.js" as Gradients
+import "code/colorspec.js" as ColorSpec
 
 KCM.SimpleKCM {
     id: page
 
-    property alias cfg_trackColor: trackColor.color
-    property alias cfg_barBorderColor: barBorderColor.color
+    property alias cfg_trackColor: trackColor.value
+    property alias cfg_barBorderColor: barBorderColor.value
     property alias cfg_barBorderWidth: barBorderWidth.value
     property string cfg_barShadows
     property alias cfg_glowEnabled: glowEnabled.checked
     property alias cfg_glowUseGradient: glowFromGradient.checked
-    property alias cfg_glowColor: glowColor.color
+    property alias cfg_glowColor: glowColor.value
     property alias cfg_glowRadius: glowRadius.value
     property alias cfg_glowStrength: glowStrength.value
     property alias cfg_glowOpacity: glowOpacity.value
     property alias cfg_barFontWeight: weightSlider.value
-    property alias cfg_barTextColor: textColorButton.color
-    property alias cfg_barTextOutlineColor: outlineColorButton.color
+    property alias cfg_barTextColor: textColorButton.value
+    property alias cfg_barTextOutlineColor: outlineColorButton.value
     property alias cfg_barTextOutlineWidth: outlineWidthSpin.value
 
     // Read only here, used by the preview
-    property color cfg_borderColor
+    property string cfg_borderColor
+    property string cfg_runningState
     property int cfg_backgroundTransparency
     property int cfg_barRadius
     property int cfg_barWidth
@@ -39,9 +40,15 @@ KCM.SimpleKCM {
 
     readonly property var gradients: Gradients.parse(cfg_gradientsCss || Gradients.defaultCss)
     readonly property var shadows: Util.parseShadows(cfg_barShadows)
-    readonly property var glow: ({ enabled: glowEnabled.checked, useGradient: glowFromGradient.checked, color: glowColor.color,
+    readonly property var glow: ({ enabled: glowEnabled.checked, useGradient: glowFromGradient.checked, color: page.col(glowColor.value),
                                    radius: glowRadius.value, strength: glowStrength.value, opacity: glowOpacity.value / 100 })
     property real previewProgress: 0.62
+
+    // A configurable color as it looks in the preview (preview gradient, preview fill)
+    function col(spec) {
+        const c = ColorSpec.resolveString(spec, stage.stops, previewProgress);
+        return Qt.rgba(c.r, c.g, c.b, c.a);
+    }
 
     ListModel { id: shadowModel }
 
@@ -92,7 +99,8 @@ KCM.SimpleKCM {
             radius: Kirigami.Units.cornerRadius
             color: stageCombo.currentIndex === 1 ? "#f4f4f4"
                  : stageCombo.currentIndex === 2 ? "#161616"
-                 : Qt.rgba(page.cfg_borderColor.r, page.cfg_borderColor.g, page.cfg_borderColor.b, 1 - page.cfg_backgroundTransparency / 100)
+                 : Qt.rgba(page.col(page.cfg_borderColor).r, page.col(page.cfg_borderColor).g, page.col(page.cfg_borderColor).b,
+                           page.col(page.cfg_borderColor).a * (1 - page.cfg_backgroundTransparency / 100))
             border.width: 1
             border.color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g, Kirigami.Theme.textColor.b, 0.15)
             readonly property color opaque: stageCombo.currentIndex === 0
@@ -114,8 +122,8 @@ KCM.SimpleKCM {
                     progress: page.previewProgress
                     text: Util.formatTime((1 - page.previewProgress) * 1500000)
                     radius: page.cfg_barRadius * 2
-                    trackColor: trackColor.color
-                    borderColor: barBorderColor.color
+                    trackColor: page.col(trackColor.value)
+                    borderColor: page.col(barBorderColor.value)
                     borderWidth: barBorderWidth.value
                     shadows: page.shadows
                     glow: page.glow
@@ -123,8 +131,8 @@ KCM.SimpleKCM {
                     leftText: i18n("Tea")
                     leftFontSize: Math.round(height * 0.45)
                     fontWeight: weightSlider.value
-                    textColor: textColorButton.color
-                    outlineColor: outlineColorButton.color
+                    textColor: page.col(textColorButton.value)
+                    outlineColor: page.col(outlineColorButton.value)
                     outlineWidth: outlineWidthSpin.value
                 }
 
@@ -141,8 +149,8 @@ KCM.SimpleKCM {
                         progress: page.previewProgress
                         text: Util.formatTime((1 - page.previewProgress) * 1500000)
                         radius: page.cfg_barRadius
-                        trackColor: trackColor.color
-                        borderColor: barBorderColor.color
+                        trackColor: page.col(trackColor.value)
+                        borderColor: page.col(barBorderColor.value)
                         borderWidth: barBorderWidth.value
                         shadows: page.shadows
                         glow: page.glow
@@ -151,8 +159,8 @@ KCM.SimpleKCM {
                         leftFontSize: page.cfg_nameFontSize
                         fontSize: page.cfg_timeFontSize
                         fontWeight: weightSlider.value
-                        textColor: textColorButton.color
-                        outlineColor: outlineColorButton.color
+                        textColor: page.col(textColorButton.value)
+                        outlineColor: page.col(outlineColorButton.value)
                         outlineWidth: outlineWidthSpin.value
                     }
                 }
@@ -199,8 +207,20 @@ KCM.SimpleKCM {
 
             Kirigami.Separator { Kirigami.FormData.isSection: true; Kirigami.FormData.label: i18n("Background and border") }
 
-            KQControls.ColorButton { id: trackColor; Kirigami.FormData.label: i18n("Background color:"); showAlphaChannel: true }
-            KQControls.ColorButton { id: barBorderColor; Kirigami.FormData.label: i18n("Border color:"); showAlphaChannel: true }
+            ColorSpecButton {
+                id: trackColor
+                Kirigami.FormData.label: i18n("Background color:")
+                dialogTitle: i18n("Progress bar background color")
+                gradients: page.gradients
+                runningState: page.cfg_runningState
+            }
+            ColorSpecButton {
+                id: barBorderColor
+                Kirigami.FormData.label: i18n("Border color:")
+                dialogTitle: i18n("Progress bar border color")
+                gradients: page.gradients
+                runningState: page.cfg_runningState
+            }
             QQC2.SpinBox { id: barBorderWidth; Kirigami.FormData.label: i18n("Border width:"); from: 0; to: 8 }
 
             Kirigami.Separator { Kirigami.FormData.isSection: true; Kirigami.FormData.label: i18n("Text (name, time and messages)") }
@@ -210,8 +230,20 @@ KCM.SimpleKCM {
                 QQC2.Slider { id: weightSlider; from: 300; to: 900; stepSize: 50; Layout.preferredWidth: Kirigami.Units.gridUnit * 10 }
                 QQC2.Label { text: i18n("%1 (Rubik)", weightSlider.value) }
             }
-            KQControls.ColorButton { id: textColorButton; Kirigami.FormData.label: i18n("Text color:"); showAlphaChannel: false }
-            KQControls.ColorButton { id: outlineColorButton; Kirigami.FormData.label: i18n("Outline color:"); showAlphaChannel: true }
+            ColorSpecButton {
+                id: textColorButton
+                Kirigami.FormData.label: i18n("Text color:")
+                dialogTitle: i18n("Text color inside the bar")
+                gradients: page.gradients
+                runningState: page.cfg_runningState
+            }
+            ColorSpecButton {
+                id: outlineColorButton
+                Kirigami.FormData.label: i18n("Outline color:")
+                dialogTitle: i18n("Text outline color")
+                gradients: page.gradients
+                runningState: page.cfg_runningState
+            }
             QQC2.SpinBox {
                 id: outlineWidthSpin
                 Kirigami.FormData.label: i18n("Outline width:")
@@ -232,8 +264,14 @@ KCM.SimpleKCM {
             }
             RowLayout {
                 enabled: glowEnabled.checked
-                QQC2.RadioButton { id: glowFixed; text: i18n("Fixed color:") }
-                KQControls.ColorButton { id: glowColor; enabled: glowFixed.checked; showAlphaChannel: false }
+                QQC2.RadioButton { id: glowFixed; text: i18n("Chosen color:") }
+                ColorSpecButton {
+                    id: glowColor
+                    enabled: glowFixed.checked
+                    dialogTitle: i18n("Glow color")
+                    gradients: page.gradients
+                    runningState: page.cfg_runningState
+                }
             }
             RowLayout {
                 Kirigami.FormData.label: i18n("Radius:")
@@ -324,10 +362,12 @@ KCM.SimpleKCM {
                         QQC2.ToolTip.text: i18n("Enabled")
                         QQC2.ToolTip.visible: hovered
                     }
-                    KQControls.ColorButton {
-                        color: row.model.color
-                        showAlphaChannel: true
-                        onAccepted: c => page.setShadow(row.index, "color", c.toString())
+                    ColorSpecButton {
+                        value: row.model.color
+                        dialogTitle: i18n("Shadow color")
+                        gradients: page.gradients
+                        runningState: page.cfg_runningState
+                        onEdited: page.setShadow(row.index, "color", value)
                     }
                     QQC2.CheckBox {
                         text: i18n("Inset")

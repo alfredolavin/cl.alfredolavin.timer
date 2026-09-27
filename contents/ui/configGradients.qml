@@ -7,6 +7,7 @@ import org.kde.kcmutils as KCM
 
 import "code/gradients.js" as Gradients
 import "code/util.js" as Util
+import "code/colorspec.js" as ColorSpec
 
 KCM.SimpleKCM {
     id: page
@@ -18,8 +19,8 @@ KCM.SimpleKCM {
 
     // Read only here, used by the preview
     property int cfg_barRadius
-    property color cfg_trackColor
-    property color cfg_barBorderColor
+    property string cfg_trackColor
+    property string cfg_barBorderColor
     property int cfg_barBorderWidth
     property string cfg_barShadows
     property bool cfg_textShadow
@@ -826,8 +827,12 @@ KCM.SimpleKCM {
                         progress: progressSlider.value
                         text: Util.formatTime((1 - progressSlider.value) * 1500000)
                         radius: page.cfg_barRadius
-                        trackColor: page.cfg_trackColor
-                        borderColor: page.cfg_barBorderColor
+                        trackColor: col(page.cfg_trackColor)
+                        borderColor: col(page.cfg_barBorderColor)
+                        function col(spec) {
+                            const c = ColorSpec.resolveString(spec, stops, progress);
+                            return Qt.rgba(c.r, c.g, c.b, c.a);
+                        }
                         borderWidth: page.cfg_barBorderWidth
                         shadows: Util.parseShadows(page.cfg_barShadows)
                         shadow: page.cfg_textShadow

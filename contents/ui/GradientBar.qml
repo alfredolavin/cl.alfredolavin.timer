@@ -2,7 +2,7 @@ import QtQuick
 import QtQuick.Effects
 
 import "code/gradients.js" as Gradients
-import "code/util.js" as Util
+import "code/colorspec.js" as ColorSpec
 
 // Rounded progress bar filled with a CSS-style gradient and outlined Rubik labels:
 // `text` centered, or right-aligned when `leftText` is shown on the left
@@ -17,7 +17,7 @@ Item {
     property color trackColor: Qt.rgba(0, 0, 0, 0.35)
     property color borderColor: "transparent"
     property int borderWidth: 0
-    // [{enabled, x, y, blur, spread, color: "#aarrggbb", inset}] like CSS box-shadow
+    // [{enabled, x, y, blur, spread, color (a configurable color), inset}] like CSS box-shadow
     property var shadows: []
     // {enabled, useGradient, color, radius, strength, opacity}
     property var glow: null
@@ -68,6 +68,11 @@ Item {
         return Gradients.css({ r: c.r, g: c.g, b: c.b, a: c.a });
     }
 
+    // Shadow colors are configurable colors (code/colorspec.js), taken from this bar's gradient and fill
+    function shadowCss(spec) {
+        return Gradients.css(ColorSpec.resolveString(spec, stops, clamped));
+    }
+
     // Draws only the shadow of pathFn's shape: the shape itself is moved far away
     // and the shadow offset brings the shadow back into view.
     function shadowOnly(ctx, color, blur, ox, oy, pathFn, oddEven) {
@@ -111,7 +116,7 @@ Item {
                 ctx.clip();
                 for (const sh of outer) {
                     const s = sh.spread;
-                    bar.shadowOnly(ctx, Util.cssOfHex(sh.color), sh.blur, sh.x, sh.y,
+                    bar.shadowOnly(ctx, bar.shadowCss(sh.color), sh.blur, sh.x, sh.y,
                                    () => bar.rounded(ctx, p - s, p - s, w + 2 * s, h + 2 * s, r + s));
                 }
                 ctx.restore();
@@ -152,7 +157,7 @@ Item {
                 ctx.clip();
                 for (const sh of insets) {
                     const s = sh.spread, m = sh.blur * 2 + Math.abs(sh.x) + Math.abs(sh.y) + 20;
-                    bar.shadowOnly(ctx, Util.cssOfHex(sh.color), sh.blur, sh.x, sh.y, () => {
+                    bar.shadowOnly(ctx, bar.shadowCss(sh.color), sh.blur, sh.x, sh.y, () => {
                         ctx.beginPath();
                         ctx.rect(p - m, p - m, w + 2 * m, h + 2 * m);
                         ctx.roundedRect(p + s, p + s, Math.max(0, w - 2 * s), Math.max(0, h - 2 * s), Math.max(0, r - s), Math.max(0, r - s));

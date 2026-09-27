@@ -5,6 +5,7 @@ import org.kde.kirigami as Kirigami
 
 import "code/util.js" as Util
 import "code/gradients.js" as Gradients
+import "code/colorspec.js" as ColorSpec
 
 // Rounded frame: icon | name + gradient bar | play/pause | delete | extra buttons
 Rectangle {
@@ -43,10 +44,17 @@ Rectangle {
     implicitHeight: Math.max(cfg.iconSize, cfg.buttonIconSize + 2 * (cfg.buttonBorderWidth + 1)) + 2 * inset
     radius: cfg.cornerRadius
     border.width: cfg.borderWidth
+    readonly property real fill: entry ? app.progressOf(entry) : 0
+    // A configurable color (code/colorspec.js) resolved with this frame's gradient and fill
+    function spec(str) {
+        const c = ColorSpec.resolveString(str, gradient.stops, fill);
+        return Qt.rgba(c.r, c.g, c.b, c.a);
+    }
+    readonly property color borderSpecColor: spec(cfg.borderColor)
     // Gradient color at the end of the fill, when background and outlines follow it
-    readonly property var fillColor: cfg.linkColors && entry ? Gradients.colorAt(gradient.stops, app.progressOf(entry)) : null
+    readonly property var fillColor: cfg.linkColors && entry ? Gradients.colorAt(gradient.stops, fill) : null
     readonly property color outlineColor: fillColor
-        ? linked(cfg.linkedOutlineLuminosity, cfg.linkedOutlineChroma, cfg.linkedOutlineOpacity) : cfg.borderColor
+        ? linked(cfg.linkedOutlineLuminosity, cfg.linkedOutlineChroma, cfg.linkedOutlineOpacity) : borderSpecColor
 
     function linked(luminosity, chroma, opacity) {
         const c = Gradients.shade(fillColor, luminosity, chroma);
@@ -55,7 +63,7 @@ Rectangle {
 
     border.color: finished && app.blink ? Kirigami.Theme.negativeTextColor : outlineColor
     color: fillColor ? linked(cfg.linkedBgLuminosity, cfg.linkedBgChroma, cfg.linkedBgOpacity)
-                     : Qt.rgba(cfg.borderColor.r, cfg.borderColor.g, cfg.borderColor.b, 1 - cfg.backgroundTransparency / 100)
+                     : Qt.rgba(borderSpecColor.r, borderSpecColor.g, borderSpecColor.b, borderSpecColor.a * (1 - cfg.backgroundTransparency / 100))
 
     RowLayout {
         id: row
@@ -69,7 +77,7 @@ Rectangle {
             Layout.preferredHeight: px
             Layout.alignment: Qt.AlignVCenter
             hex: frame.entry ? frame.entry.icon : "f051b"
-            color: cfg.useThemeIconColor ? frame.contrastColor : cfg.iconColor
+            color: cfg.useThemeIconColor ? frame.contrastColor : frame.spec(cfg.iconColor)
             opacity: frame.finished && frame.app.blink ? 0.3 : 1
         }
 
@@ -86,27 +94,27 @@ Rectangle {
                 anchors.right: parent.right
                 height: frame.barHeight
                 stops: frame.gradient.stops
-                progress: frame.entry ? frame.app.progressOf(frame.entry) : 0
+                progress: frame.fill
                 text: !frame.entry ? i18n("No timers running")
                     : frame.finished ? frame.finishedText
                     : Util.formatTime(frame.app.remainingOf(frame.entry))
                 leftText: frame.entry && !frame.finished ? frame.entry.name : ""
                 leftFontSize: cfg.nameFontSize
                 fontWeight: cfg.barFontWeight
-                textColor: cfg.barTextColor
-                outlineColor: cfg.barTextOutlineColor
+                textColor: frame.spec(cfg.barTextColor)
+                outlineColor: frame.spec(cfg.barTextOutlineColor)
                 outlineWidth: cfg.barTextOutlineWidth
-                trackColor: cfg.trackColor
-                borderColor: cfg.barBorderColor
+                trackColor: frame.spec(cfg.trackColor)
+                borderColor: frame.spec(cfg.barBorderColor)
                 borderWidth: cfg.barBorderWidth
                 shadows: Util.parseShadows(cfg.barShadows)
-                glow: ({ enabled: cfg.glowEnabled, useGradient: cfg.glowUseGradient, color: cfg.glowColor,
+                glow: ({ enabled: cfg.glowEnabled, useGradient: cfg.glowUseGradient, color: frame.spec(cfg.glowColor),
                          radius: cfg.glowRadius, strength: cfg.glowStrength, opacity: cfg.glowOpacity / 100 })
                 radius: cfg.barRadius
                 // when finished: bold text at 95% of the bar height in the configured color
                 fontSize: !frame.entry ? frame.emptyFontSize
                         : frame.finished ? Math.max(6, Math.round(frame.barHeight * 0.95)) : cfg.timeFontSize
-                labelColor: frame.finished ? cfg.finishedTextColor : null
+                labelColor: frame.finished ? frame.spec(cfg.finishedTextColor) : null
                 shadow: cfg.textShadow
                 blink: frame.finished && frame.app.blink
                 opacity: frame.entry && frame.entry.paused ? 0.6 : 1
