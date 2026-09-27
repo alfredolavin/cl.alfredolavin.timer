@@ -197,18 +197,15 @@ Item {
 
     readonly property string fontFamily: rubik.font.family
 
-    // inline components can't see this file's ids, so the bar is passed in as `b`.
-    // One Text with Qt's own 1 px outline
-    component BarText: Text {
+    // inline components can't see this file's ids, so the bar is passed in as `b`
+    component BarText: OutlinedText {
         required property Item b
         anchors.verticalCenter: parent.verticalCenter
-        // the outline stays inside the 2 px padding too
+        // the 1 px outline stays inside the 2 px padding too
         height: Math.max(1, b.height - 6)
-        verticalAlignment: Text.AlignVCenter
         minimumPixelSize: 6
         opacity: b.blink ? 0.25 : 1
-        style: b.outlineColor.a > 0 ? Text.Outline : Text.Normal
-        styleColor: b.outlineColor
+        outlineColor: b.outlineColor
         font.family: b.fontFamily
         font.weight: b.fontWeight
         font.variableAxes: { "wght": b.fontWeight }
