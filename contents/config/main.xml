@@ -86,6 +86,8 @@
         <entry name="timers" type="String"><default></default></entry>
         <!-- gradient of one-off timers and alarms from the popup's quick entry; empty = the first gradient -->
         <entry name="quickGradient" type="String"><default></default></entry>
+        <!-- icon (codepoint hex) of one-off timers and alarms from the popup's quick entry; empty = automatic (alarm bell / timer icon) -->
+        <entry name="quickIcon" type="String"><default></default></entry>
         <!-- CSS gradients; empty means built-in defaults -->
         <entry name="gradientsCss" type="String"><default></default></entry>
         <!-- visibility mode of the hosting panel while it is forced visible by a finished timer; -1 = not forced -->

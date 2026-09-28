@@ -120,7 +120,7 @@ PlasmoidItem {
             launch(t);
     }
 
-    // One-off timer or alarm from the popup's quick entry, with default settings
+    // One-off timer or alarm from the popup's quick entry; q.gradient/q.icon override the configured defaults
     function startQuick(q) {
         const isAlarm = q.kind === "alarm";
         launch(Util.normalize({
@@ -128,8 +128,8 @@ PlasmoidItem {
             at: q.at,
             duration: q.duration,
             name: isAlarm ? i18n("Alarm %1", Util.formatClock(q.at)) : i18n("Timer %1", Util.formatDuration(q.duration)),
-            icon: isAlarm ? "f0020" : "f051b",
-            gradient: cfg.quickGradient,
+            icon: q.icon || cfg.quickIcon || (isAlarm ? "f0020" : "f051b"),
+            gradient: q.gradient || cfg.quickGradient,
             message: i18n("Time's up!!")
         }));
     }

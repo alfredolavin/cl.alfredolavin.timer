@@ -60,8 +60,8 @@ function nextOccurrence(at, nowMs) {
     return d.getTime();
 }
 
-// Quick entry. Durations: "25" (minutes), "90s", "5m", "1h30", "1h 30m 10s".
-// Times of day (alarms): "14:30", "7pm", "7:30 am". Returns null when not understood.
+// Quick entry. Durations: "25" (minutes), "90s", "5m", "1h30", "1h 30m 10s", "8,5" (8.5 minutes = 8m30s).
+// Times of day (alarms): "14:30", "7pm", "7:30 am", "8." (8:00), "8.50" (8:50). Returns null when not understood.
 function parseQuick(text) {
     var s = (text || "").toLowerCase().replace(/\s+/g, "");
     if (!s)
@@ -78,9 +78,18 @@ function parseQuick(text) {
         var h = parseInt(m[1], 10), min = parseInt(m[2], 10);
         return h < 24 && min < 60 ? { kind: "alarm", at: h * 60 + min } : null;
     }
+    // "8." or "8.50": a clock time typed with a dot instead of a colon
+    m = s.match(/^(\d{1,2})\.(\d{0,2})$/);
+    if (m) {
+        var hDot = parseInt(m[1], 10), minDot = m[2] ? parseInt(m[2].padEnd(2, "0"), 10) : 0;
+        return hDot < 24 && minDot < 60 ? { kind: "alarm", at: hDot * 60 + minDot } : null;
+    }
     var sec = -1;
     if (/^\d+$/.test(s))
         sec = parseInt(s, 10) * 60;
+    // "8,5": a decimal number of minutes typed with a comma
+    else if ((m = s.match(/^(\d+),(\d+)$/)))
+        sec = Math.round(parseFloat(m[1] + "." + m[2]) * 60);
     else if ((m = s.match(/^(\d+)h(\d+)$/)))
         sec = parseInt(m[1], 10) * 3600 + parseInt(m[2], 10) * 60;
     else if ((m = s.match(/^(?:(\d+)h)?(?:(\d+)m(?:in)?)?(?:(\d+)s)?$/)))

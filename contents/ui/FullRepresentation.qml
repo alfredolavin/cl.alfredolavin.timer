@@ -1,4 +1,5 @@
 import QtQuick
+import QtQuick.Controls as QQC2
 import QtQuick.Layouts
 import org.kde.plasma.plasmoid
 import org.kde.plasma.core as PlasmaCore
@@ -7,6 +8,7 @@ import org.kde.plasma.components as PlasmaComponents
 import org.kde.kirigami as Kirigami
 
 import "code/util.js" as Util
+import "code/gradients.js" as Gradients
 
 // Popup: running timers on the left, timers that can be started on the right
 PlasmaExtras.Representation {
@@ -17,6 +19,7 @@ PlasmaExtras.Representation {
     readonly property bool inPanel: Plasmoid.formFactor === PlasmaCore.Types.Horizontal || Plasmoid.formFactor === PlasmaCore.Types.Vertical
     // both columns get the same width: enough for a running timer frame
     readonly property int columnWidth: Math.max(Kirigami.Units.gridUnit * 15, sizer.implicitWidth)
+    readonly property var gradients: Gradients.parse(cfg.gradientsCss || Gradients.defaultCss)
 
     Layout.minimumWidth: Kirigami.Units.gridUnit * 24
     Layout.preferredWidth: 2 * columnWidth + Kirigami.Units.largeSpacing * 3
@@ -82,12 +85,15 @@ PlasmaExtras.Representation {
                 spacing: Kirigami.Units.smallSpacing
 
                 readonly property var parsed: Util.parseQuick(quickField.text)
+                // style for the next quick timer/alarm; starts from the configured defaults, changeable per launch
+                property string gradient: full.cfg.quickGradient
+                property string icon: full.cfg.quickIcon
 
                 function launch() {
                     if (!parsed)
                         return;
                     full.app.expanded = false;
-                    full.app.startQuick(parsed);
+                    full.app.startQuick(Object.assign({}, parsed, { gradient: quickRow.gradient, icon: quickRow.icon }));
                     quickField.clear();
                 }
 
@@ -97,6 +103,53 @@ PlasmaExtras.Representation {
                     placeholderText: i18n("Quick timer or alarm: 25, 1h30, 90s, 14:30, 7pm…")
                     color: text.length && !quickRow.parsed ? Kirigami.Theme.negativeTextColor : Kirigami.Theme.textColor
                     onAccepted: quickRow.launch()
+                }
+                QQC2.ComboBox {
+                    id: quickGradientCombo
+                    Layout.preferredWidth: Kirigami.Units.gridUnit * 7
+                    model: full.gradients
+                    textRole: "name"
+                    currentIndex: Math.max(0, full.gradients.findIndex(g => g.name === quickRow.gradient))
+                    onActivated: index => quickRow.gradient = full.gradients[index].name
+                    QQC2.ToolTip.text: i18n("Gradient for this quick timer")
+                    QQC2.ToolTip.visible: hovered
+                    popup.width: Kirigami.Units.gridUnit * 14
+                    delegate: QQC2.ItemDelegate {
+                        required property var modelData
+                        required property int index
+                        width: quickGradientCombo.popup.width
+                        highlighted: quickGradientCombo.highlightedIndex === index
+                        contentItem: RowLayout {
+                            QQC2.Label {
+                                text: modelData.name
+                                Layout.preferredWidth: Kirigami.Units.gridUnit * 7
+                                elide: Text.ElideRight
+                            }
+                            GradientBar {
+                                Layout.fillWidth: true
+                                Layout.preferredHeight: Kirigami.Units.gridUnit * 0.8
+                                stops: modelData.stops
+                                progress: 1
+                                radius: 4
+                            }
+                        }
+                    }
+                }
+                PlasmaComponents.ToolButton {
+                    display: PlasmaComponents.AbstractButton.IconOnly
+                    text: i18n("Icon for this quick timer")
+                    PlasmaComponents.ToolTip.text: text
+                    PlasmaComponents.ToolTip.visible: hovered
+                    onClicked: quickIconPicker.open()
+                    contentItem: Item {
+                        implicitWidth: Kirigami.Units.gridUnit * 1.8
+                        implicitHeight: implicitWidth
+                        SvgIcon {
+                            anchors.fill: parent
+                            hex: quickRow.icon || (quickRow.parsed && quickRow.parsed.kind === "alarm" ? "f0020" : "f051b")
+                            color: Kirigami.Theme.textColor
+                        }
+                    }
                 }
                 PlasmaComponents.Label {
                     visible: !!quickRow.parsed
@@ -116,6 +169,12 @@ PlasmaExtras.Representation {
                     PlasmaComponents.ToolTip.visible: hovered
                     onClicked: quickRow.launch()
                 }
+            }
+
+            IconPicker {
+                id: quickIconPicker
+                selected: quickRow.icon || "f051b"
+                onPicked: hex => quickRow.icon = hex
             }
 
             AlarmSilencer {

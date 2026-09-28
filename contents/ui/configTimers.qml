@@ -13,6 +13,7 @@ KCM.SimpleKCM {
     property string cfg_timers
     property string cfg_gradientsCss
     property string cfg_quickGradient
+    property string cfg_quickIcon
 
     readonly property var gradients: Gradients.parse(cfg_gradientsCss || Gradients.defaultCss)
     readonly property int idx: list.currentIndex
@@ -88,6 +89,12 @@ KCM.SimpleKCM {
             page.currentIcon = hex;
             page.setRole("icon", hex);
         }
+    }
+
+    IconPicker {
+        id: quickIconPicker
+        selected: page.cfg_quickIcon || "f051b"
+        onPicked: hex => page.cfg_quickIcon = hex
     }
 
     RowLayout {
@@ -265,6 +272,26 @@ KCM.SimpleKCM {
                 textRole: "name"
                 currentIndex: Math.max(0, page.gradients.findIndex(g => g.name === page.cfg_quickGradient))
                 onActivated: index => page.cfg_quickGradient = page.gradients[index].name
+                delegate: QQC2.ItemDelegate {
+                    required property var modelData
+                    required property int index
+                    width: quickGradientCombo.popup.width
+                    highlighted: quickGradientCombo.highlightedIndex === index
+                    contentItem: RowLayout {
+                        QQC2.Label {
+                            text: modelData.name
+                            Layout.preferredWidth: Kirigami.Units.gridUnit * 7
+                            elide: Text.ElideRight
+                        }
+                        GradientBar {
+                            Layout.fillWidth: true
+                            Layout.preferredHeight: Kirigami.Units.gridUnit * 0.8
+                            stops: modelData.stops
+                            progress: 1
+                            radius: 4
+                        }
+                    }
+                }
             }
             GradientBar {
                 Layout.fillWidth: true
@@ -272,6 +299,43 @@ KCM.SimpleKCM {
                 radius: 3
                 progress: 1
                 stops: page.gradients.length ? page.gradients[Math.max(0, quickGradientCombo.currentIndex)].stops : []
+            }
+
+            // icon of the one-off timers and alarms started from the popup's quick entry; empty = automatic
+            RowLayout {
+                Layout.fillWidth: true
+                Layout.topMargin: Kirigami.Units.largeSpacing
+                spacing: Kirigami.Units.smallSpacing
+                QQC2.Label {
+                    Layout.fillWidth: true
+                    text: i18n("Icon of quick timers and alarms:")
+                    elide: Text.ElideRight
+                }
+                QQC2.Button {
+                    implicitWidth: Kirigami.Units.gridUnit * 3
+                    implicitHeight: implicitWidth
+                    QQC2.ToolTip.text: i18n("Choose an icon")
+                    QQC2.ToolTip.visible: hovered
+                    onClicked: quickIconPicker.open()
+                    contentItem: Item {
+                        SvgIcon {
+                            anchors.centerIn: parent
+                            width: Kirigami.Units.gridUnit * 1.8
+                            height: width
+                            hex: page.cfg_quickIcon || "f051b"
+                            color: Kirigami.Theme.textColor
+                        }
+                    }
+                }
+                QQC2.ToolButton {
+                    icon.name: "edit-clear"
+                    display: QQC2.AbstractButton.IconOnly
+                    visible: !!page.cfg_quickIcon
+                    text: i18n("Use the automatic icon (alarm bell or timer icon)")
+                    QQC2.ToolTip.text: text
+                    QQC2.ToolTip.visible: hovered
+                    onClicked: page.cfg_quickIcon = ""
+                }
             }
         }
 
