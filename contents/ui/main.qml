@@ -138,7 +138,7 @@ PlasmoidItem {
             }
         });
         if (!anyFinished)
-            alarm.stop();
+            silence();
     }
 
     function remove(uid) {
@@ -148,7 +148,7 @@ PlasmoidItem {
                 list.splice(i, 1);
         });
         if (!anyFinished)
-            alarm.stop();
+            silence();
     }
 
     function finishedUids() {
