@@ -66,6 +66,21 @@ PlasmoidItem {
         return r.duration > 0 ? 1 - remainingOf(r) / (r.duration * 1000) : 1;
     }
 
+    function elapsedOf(r) {
+        if (!r)
+            return 0;
+        return Math.max(0, r.duration * 1000 - remainingOf(r));
+    }
+
+    // Per-timer: click the bar's time to flip between remaining and elapsed
+    function toggleTimeDisplay(uid) {
+        mutate(list => {
+            const r = list.find(x => x.uid === uid);
+            if (r)
+                r.showElapsed = !r.showElapsed;
+        });
+    }
+
     function gradientFor(name) {
         return Gradients.find(gradients, name);
     }

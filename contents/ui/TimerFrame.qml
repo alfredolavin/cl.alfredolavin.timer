@@ -91,8 +91,11 @@ Rectangle {
                 progress: frame.fill
                 text: !frame.entry ? i18n("No timers running")
                     : frame.finished ? frame.finishedText
+                    : frame.entry.showElapsed ? "+" + Util.formatTime(frame.app.elapsedOf(frame.entry))
                     : Util.formatTime(frame.app.remainingOf(frame.entry))
                 leftText: frame.entry && !frame.finished ? frame.entry.name : ""
+                clickableTime: !!frame.entry && !frame.finished
+                onTimeClicked: frame.app.toggleTimeDisplay(frame.uid)
                 leftFontSize: cfg.nameFontSize
                 fontWeight: cfg.barFontWeight
                 textColor: frame.spec(cfg.barTextColor)

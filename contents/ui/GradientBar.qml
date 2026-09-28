@@ -32,6 +32,9 @@ Item {
     property var labelColor: null
     property bool shadow: true
     property bool blink: false
+    // Whether clicking the time label emits timeClicked (e.g. toggle remaining/elapsed)
+    property bool clickableTime: false
+    signal timeClicked
     // Marker at the end of the fill, or null:
     // {line, lineWidth, circle, circleSize, circlePosition: "top"|"middle"|"bottom", color, blink, period (ms)}
     property var marker: null
@@ -296,5 +299,18 @@ Item {
         color: bar.labelColor ?? bar.textColor
         font.pixelSize: bar.fontSize > 0 ? bar.fontSize : Math.max(6, bar.height)
         font.features: { "tnum": 1 }
+    }
+
+    // Click area over just the rendered time text (label is right-aligned, so anchor to its right edge)
+    MouseArea {
+        visible: bar.clickableTime && label.visible
+        enabled: visible
+        anchors.right: label.right
+        anchors.verticalCenter: label.verticalCenter
+        width: Math.min(label.width, label.contentWidth + 8)
+        height: label.height
+        hoverEnabled: true
+        cursorShape: Qt.PointingHandCursor
+        onClicked: bar.timeClicked()
     }
 }
