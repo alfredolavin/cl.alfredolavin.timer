@@ -17,6 +17,9 @@ Rectangle {
     signal emptyClicked
     // When true the progress bar grows to fill the available width
     property bool stretch: false
+    // The panel's frame follows the Panel options of Appearance; `revealed` is true while it is hovered
+    property bool panelMode: false
+    property bool revealed: true
 
     readonly property var cfg: Plasmoid.configuration
     readonly property var entry: uid ? app.entry(uid) : null
@@ -26,15 +29,23 @@ Rectangle {
     // Buttons take at most 85% of the available height
     readonly property int buttonSize: Math.max(8, Math.min(cfg.buttonIconSize, Math.round((inner - 2 * (cfg.buttonBorderWidth + 1)) * 0.85)))
     readonly property bool finished: !!entry && entry.finished
-    readonly property int barHeight: Math.round(inner * cfg.barHeightPercent / 100)
+    // everything shown (buttons, and the frame unless the bar is the widget): always outside the panel,
+    // and in it unless it is set to reveal them on hover; a finished timer shows its dismiss button
+    readonly property bool showAll: !panelMode || !cfg.revealOnHover || revealed || finished
+    // the bar is the whole widget, with the icon and buttons inside it
+    readonly property bool container: panelMode && (cfg.panelLayout === "bar" || !showAll)
+    readonly property int barHeight: container ? height : Math.round(inner * cfg.barHeightPercent / 100)
     // "Time is up" text drawn over the bar, e.g. "Tea Ready!! (3m)"
     readonly property bool isAlarm: !!entry && entry.kind === "alarm"
     readonly property string finishedText: finished ? Util.finishedMessage(entry) + " ("
         + (isAlarm ? Util.formatClock(entry.at) : Util.formatDuration(entry.duration)) + ")" : ""
     // with no timer, "No timers running" is centered in the bar, shrunk to fit its width
     readonly property int emptyFontSize: Math.max(6, Math.min(Math.round(barHeight * 0.62),
-        Math.floor(100 * (cfg.barWidth - Math.max(4, barHeight / 2)) / Math.max(1, emptyMetrics.width))))
-    readonly property int barAreaWidth: cfg.barWidth
+        Math.floor(100 * (barArea.width - Math.max(4, barHeight / 2)) / Math.max(1, emptyMetrics.width))))
+    // the bar grows with the frame: in the popup (stretch) or when set to fill the available width
+    readonly property bool fillBar: stretch || cfg.barFillWidth
+    // width of the bar, or its smallest width while it fills
+    readonly property int barAreaWidth: cfg.barFillWidth ? Kirigami.Units.gridUnit * 3 : cfg.barWidth
     // Opaque color of the frame as seen on the panel, for contrast decisions
     readonly property var baseColor: Gradients.over({ r: color.r, g: color.g, b: color.b, a: color.a },
         { r: Kirigami.Theme.backgroundColor.r, g: Kirigami.Theme.backgroundColor.g, b: Kirigami.Theme.backgroundColor.b, a: 1 })
@@ -43,7 +54,7 @@ Rectangle {
     implicitWidth: row.implicitWidth + 2 * inset
     implicitHeight: Math.max(cfg.iconSize, cfg.buttonIconSize + 2 * (cfg.buttonBorderWidth + 1)) + 2 * inset
     radius: cfg.cornerRadius
-    border.width: cfg.borderWidth
+    border.width: container ? 0 : cfg.borderWidth
     readonly property real fill: entry ? app.progressOf(entry) : 0
     // A configurable color (code/colorspec.js) resolved with this frame's gradient and fill
     function spec(str) {
@@ -57,7 +68,7 @@ Rectangle {
     readonly property color outlineColor: spec(ColorSpec.frameSpec("outline", cfg.frameOutlineColor, cfg))
 
     border.color: finished && app.blink ? Kirigami.Theme.negativeTextColor : outlineColor
-    color: spec(ColorSpec.frameSpec("background", cfg.frameBackgroundColor, cfg))
+    color: container ? "transparent" : spec(ColorSpec.frameSpec("background", cfg.frameBackgroundColor, cfg))
 
     RowLayout {
         id: row
@@ -71,22 +82,30 @@ Rectangle {
             Layout.preferredHeight: px
             Layout.alignment: Qt.AlignVCenter
             hex: frame.entry ? frame.entry.icon : "f051b"
-            color: cfg.useThemeIconColor ? frame.contrastColor : frame.spec(cfg.iconColor)
+            // over the bar it takes the bar's text color
+            color: !cfg.useThemeIconColor ? frame.spec(cfg.iconColor) : frame.container ? frame.spec(cfg.barTextColor) : frame.contrastColor
             opacity: frame.finished && frame.app.blink ? 0.3 : 1
         }
 
         Item {
+            id: barArea
+            // as the widget, the bar is drawn under the icon and buttons
+            z: frame.container ? -1 : 0
             Layout.fillHeight: true
-            Layout.fillWidth: frame.stretch
+            Layout.fillWidth: frame.fillBar
             Layout.preferredWidth: frame.barAreaWidth
-            Layout.maximumWidth: frame.stretch ? Number.POSITIVE_INFINITY : frame.barAreaWidth
+            Layout.maximumWidth: frame.fillBar ? Number.POSITIVE_INFINITY : frame.barAreaWidth
 
             // name on the left inside the bar, time on the right
             GradientBar {
-                anchors.verticalCenter: parent.verticalCenter
-                anchors.left: parent.left
-                anchors.right: parent.right
-                height: frame.barHeight
+                // its own place in the row, or the whole frame when the bar is the widget
+                x: frame.container ? -(row.x + barArea.x) : 0
+                y: frame.container ? -(row.y + barArea.y) : Math.round((barArea.height - height) / 2)
+                width: frame.container ? frame.width : barArea.width
+                height: frame.container ? frame.height : frame.barHeight
+                // labels start after the icon and end before the buttons (or at the edge while they are hidden)
+                contentLeft: frame.container ? row.x + barArea.x : 0
+                contentRight: frame.container && frame.showAll ? frame.width - (row.x + barArea.x + barArea.width) : 0
                 stops: frame.gradient.stops
                 progress: frame.fill
                 text: !frame.entry ? i18n("No timers running")
@@ -107,7 +126,7 @@ Rectangle {
                 shadows: Util.parseShadows(cfg.barShadows)
                 glow: ({ enabled: cfg.glowEnabled, color: frame.glowColor,
                          radius: cfg.glowRadius, strength: cfg.glowStrength, opacity: cfg.glowOpacity / 100 })
-                radius: cfg.barRadius
+                radius: frame.container ? cfg.cornerRadius : cfg.barRadius
                 // only while a timer counts down
                 marker: frame.entry && !frame.finished
                     ? { line: cfg.markerLine, lineWidth: cfg.markerLineWidth, circle: cfg.markerCircle, circleSize: cfg.markerCircleSize,
@@ -128,6 +147,9 @@ Rectangle {
             // an alarm is tied to a time of day, so it is not paused
             visible: !!frame.entry && !frame.finished && !frame.isAlarm
             size: frame.buttonSize
+            opacity: frame.showAll ? 1 : 0
+            enabled: frame.showAll
+            Behavior on opacity { NumberAnimation { duration: Kirigami.Units.shortDuration } }
             borderColor: frame.outlineColor
             iconName: !frame.entry ? "" : frame.entry.paused ? "media-playback-start" : "media-playback-pause"
             tooltip: !frame.entry ? "" : frame.entry.paused ? i18n("Resume") : i18n("Pause")
@@ -137,6 +159,9 @@ Rectangle {
         IconButton {
             visible: !!frame.entry
             size: frame.buttonSize
+            opacity: frame.showAll ? 1 : 0
+            enabled: frame.showAll
+            Behavior on opacity { NumberAnimation { duration: Kirigami.Units.shortDuration } }
             borderColor: frame.outlineColor
             iconName: "edit-delete"
             tooltip: frame.finished ? i18n("Dismiss") : i18n("Stop and remove")
@@ -147,6 +172,9 @@ Rectangle {
             id: extras
             spacing: cfg.spacing
             visible: children.length > 0
+            opacity: frame.showAll ? 1 : 0
+            enabled: frame.showAll
+            Behavior on opacity { NumberAnimation { duration: Kirigami.Units.shortDuration } }
         }
     }
 

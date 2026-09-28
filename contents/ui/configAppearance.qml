@@ -34,6 +34,8 @@ KCM.SimpleKCM {
         linkedOutlineChroma: cfg_linkedOutlineChroma
     })
 
+    property string cfg_panelLayout
+    property alias cfg_revealOnHover: revealOnHover.checked
     property alias cfg_cornerRadius: cornerRadius.value
     property alias cfg_borderWidth: borderWidth.value
     property alias cfg_padding: padding.value
@@ -42,6 +44,7 @@ KCM.SimpleKCM {
     property alias cfg_useThemeIconColor: autoIconColor.checked
     property alias cfg_iconColor: iconColor.value
     property alias cfg_barWidth: barWidth.value
+    property alias cfg_barFillWidth: barFillWidth.checked
     property alias cfg_barHeightPercent: barHeight.value
     property alias cfg_barRadius: barRadius.value
     property alias cfg_textShadow: textShadow.checked
@@ -51,6 +54,23 @@ KCM.SimpleKCM {
     property alias cfg_finishedTextColor: finishedTextColor.value
 
     Kirigami.FormLayout {
+        Kirigami.Separator { Kirigami.FormData.isSection: true; Kirigami.FormData.label: i18n("Panel") }
+
+        QQC2.ComboBox {
+            readonly property var layouts: ["frame", "bar"]
+            Kirigami.FormData.label: i18n("Layout:")
+            model: [i18n("Frame holding the icon, bar and buttons"), i18n("The bar is the widget, holding the icon and buttons")]
+            currentIndex: Math.max(0, layouts.indexOf(page.cfg_panelLayout))
+            onActivated: index => page.cfg_panelLayout = layouts[index]
+        }
+        QQC2.CheckBox {
+            id: revealOnHover
+            text: i18n("Show only the bar and icon until the mouse is over it")
+            QQC2.ToolTip.text: i18n("The bar fills the whole widget with the icon inside it; the buttons (and the frame) appear on mouse over, while the popup is open or when a timer ends")
+            QQC2.ToolTip.visible: hovered
+            QQC2.ToolTip.delay: Kirigami.Units.toolTipDelay
+        }
+
         Kirigami.Separator { Kirigami.FormData.isSection: true; Kirigami.FormData.label: i18n("Frame") }
 
         QQC2.SpinBox { id: cornerRadius; Kirigami.FormData.label: i18n("Corner radius:"); from: 0; to: 30 }
@@ -91,7 +111,24 @@ KCM.SimpleKCM {
 
         Kirigami.Separator { Kirigami.FormData.isSection: true; Kirigami.FormData.label: i18n("Progress bar") }
 
-        QQC2.SpinBox { id: barWidth; Kirigami.FormData.label: i18n("Bar width (px):"); from: 30; to: 600 }
+        RowLayout {
+            Kirigami.FormData.label: i18n("Bar width:")
+            QQC2.SpinBox {
+                id: barWidth
+                enabled: !barFillWidth.checked
+                from: 30
+                to: 600
+                textFromValue: v => i18n("%1 px", v)
+                valueFromText: t => parseInt(t) || 100
+            }
+            QQC2.CheckBox {
+                id: barFillWidth
+                text: i18n("Fill all available width")
+                QQC2.ToolTip.text: i18n("In a horizontal panel the widget takes the panel's free space, like a spacer")
+                QQC2.ToolTip.visible: hovered
+                QQC2.ToolTip.delay: Kirigami.Units.toolTipDelay
+            }
+        }
         RowLayout {
             Kirigami.FormData.label: i18n("Bar height:")
             QQC2.Slider { id: barHeight; from: 30; to: 100; stepSize: 1; Kirigami.StyleHints.tickMarkStepSize: -1; Layout.preferredWidth: Kirigami.Units.gridUnit * 10 }

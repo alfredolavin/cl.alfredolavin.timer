@@ -34,6 +34,9 @@ Item {
     property bool blink: false
     // Whether clicking the time label emits timeClicked (e.g. toggle remaining/elapsed)
     property bool clickableTime: false
+    // room kept free on each side of the labels (e.g. for an icon or buttons drawn over the bar)
+    property real contentLeft: 0
+    property real contentRight: 0
     signal timeClicked
     // Marker at the end of the fill, or null:
     // {line, lineWidth, circle, circleSize, circlePosition: "top"|"middle"|"bottom", color, blink, period (ms)}
@@ -275,9 +278,9 @@ Item {
         id: nameLabel
         b: bar
         anchors.left: parent.left
-        anchors.leftMargin: bar.inset
+        anchors.leftMargin: bar.contentLeft + bar.inset
         // whatever the time on the right leaves free
-        width: Math.max(0, bar.width - 2 * bar.inset - (label.visible ? label.contentWidth + bar.inset : 0))
+        width: Math.max(0, bar.width - bar.contentLeft - bar.contentRight - 2 * bar.inset - (label.visible ? label.contentWidth + bar.inset : 0))
         fontSizeMode: Text.VerticalFit
         elide: Text.ElideRight
         text: bar.leftText
@@ -289,9 +292,11 @@ Item {
     BarText {
         id: label
         b: bar
-        anchors.horizontalCenter: parent.horizontalCenter
-        // shrinks to the bar's real size minus the padding on each side (2 px when centered)
-        width: Math.max(1, bar.width - (bar.split ? 2 * bar.inset : 4 + 2 * bar.outlineWidth))
+        // the bar minus the free room and the padding on each side (2 px when centered)
+        readonly property real sidePad: bar.split ? bar.inset : 2 + bar.outlineWidth
+        anchors.left: parent.left
+        anchors.leftMargin: bar.contentLeft + sidePad
+        width: Math.max(1, bar.width - bar.contentLeft - bar.contentRight - 2 * sidePad)
         horizontalAlignment: bar.split ? Text.AlignRight : Text.AlignHCenter
         fontSizeMode: Text.Fit
         text: bar.text

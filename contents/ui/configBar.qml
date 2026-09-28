@@ -50,6 +50,7 @@ KCM.SimpleKCM {
     property int cfg_backgroundTransparency
     property int cfg_barRadius
     property int cfg_barWidth
+    property bool cfg_barFillWidth
     property int cfg_barHeightPercent
     property bool cfg_textShadow
     property string cfg_gradientsCss
@@ -164,7 +165,8 @@ KCM.SimpleKCM {
                         color: Gradients.prefersDark({ r: stage.opaque.r, g: stage.opaque.g, b: stage.opaque.b, a: 1 }) ? "black" : "white"
                     }
                     GradientBar {
-                        Layout.preferredWidth: page.cfg_barWidth
+                        // filling: as wide as the preview allows
+                        Layout.preferredWidth: page.cfg_barFillWidth ? Math.max(page.cfg_barWidth, stage.width - Kirigami.Units.gridUnit * 8) : page.cfg_barWidth
                         Layout.preferredHeight: Math.round(36 * page.cfg_barHeightPercent / 100)
                         stops: stage.stops
                         progress: page.previewProgress

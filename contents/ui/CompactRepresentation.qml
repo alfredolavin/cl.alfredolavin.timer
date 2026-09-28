@@ -9,17 +9,23 @@ Item {
 
     property var app
 
+    // filling: take the panel's free space (like a spacer) instead of a fixed width
+    readonly property bool fill: Plasmoid.configuration.barFillWidth && Plasmoid.formFactor !== PlasmaCore.Types.Vertical
     Layout.minimumWidth: frame.implicitWidth
     Layout.preferredWidth: frame.implicitWidth
-    Layout.maximumWidth: frame.implicitWidth
+    Layout.maximumWidth: fill ? Number.POSITIVE_INFINITY : frame.implicitWidth
+    Layout.fillWidth: fill
     Layout.minimumHeight: Plasmoid.formFactor === PlasmaCore.Types.Vertical ? frame.implicitHeight : -1
 
     TimerFrame {
         id: frame
         app: compact.app
         uid: compact.app.currentUid
+        panelMode: true
+        // hovered, or its popup is open
+        revealed: hover.hovered || compact.app.expanded
         anchors.verticalCenter: parent.verticalCenter
-        width: implicitWidth
+        width: compact.fill ? parent.width : implicitWidth
         height: Plasmoid.formFactor === PlasmaCore.Types.Vertical ? implicitHeight : parent.height
         onEmptyClicked: compact.app.togglePopup()
 
@@ -53,6 +59,10 @@ Item {
             }
         }
 
+    }
+
+    HoverHandler {
+        id: hover
     }
 
     AlarmSilencer {
