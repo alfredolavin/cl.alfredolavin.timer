@@ -68,6 +68,31 @@ QQC2.Button {
     QQC2.ToolTip.visible: hovered
     QQC2.ToolTip.delay: Kirigami.Units.toolTipDelay
 
+    leftPadding: 3
+    rightPadding: 3
+
+    // transparent, with a small shadow around it; a tint while hovered or pressed, a ring when focused
+    background: Item {
+        implicitWidth: Kirigami.Units.gridUnit * 3
+        implicitHeight: Kirigami.Units.gridUnit * 1.6
+        readonly property color hl: Kirigami.Theme.highlightColor
+        BoxShadow {
+            anchors.fill: parent
+            radius: Kirigami.Units.cornerRadius
+            blur: 4
+            offsetY: 1
+            color: Qt.rgba(0, 0, 0, 0.3)
+        }
+        Rectangle {
+            anchors.fill: parent
+            radius: Kirigami.Units.cornerRadius
+            color: btn.pressed ? Qt.rgba(parent.hl.r, parent.hl.g, parent.hl.b, 0.3)
+                 : btn.hovered ? Qt.rgba(parent.hl.r, parent.hl.g, parent.hl.b, 0.15) : "transparent"
+            border.width: btn.visualFocus ? 1 : 0
+            border.color: parent.hl
+        }
+    }
+
     contentItem: RowLayout {
         spacing: Kirigami.Units.smallSpacing
         Swatch {
@@ -89,15 +114,30 @@ QQC2.Button {
         dialog.open();
     }
 
-    // Color over a checkerboard, optionally with the gradient it comes from underneath
+    // Color over a checkerboard, raised (drop shadow and a light-to-dark bevel, no outline),
+    // optionally with the gradient it comes from underneath
     component Swatch: Item {
+        id: sw
         property color color
         property var stops: []
+        readonly property real radius: 3
+        BoxShadow {
+            anchors.fill: parent
+            radius: sw.radius
+            blur: 3
+            offsetY: 1.5
+            color: Qt.rgba(0, 0, 0, 0.45)
+        }
         Canvas {
             anchors.fill: parent
+            onWidthChanged: requestPaint()
+            onHeightChanged: requestPaint()
             onPaint: {
                 const ctx = getContext("2d");
                 ctx.reset();
+                ctx.beginPath();
+                ctx.roundedRect(0, 0, width, height, sw.radius, sw.radius);
+                ctx.clip();
                 for (let x = 0; x < width; x += 4)
                     for (let y = 0; y < height; y += 4) {
                         ctx.fillStyle = (x / 4 + y / 4) % 2 ? "#999999" : "#666666";
@@ -107,16 +147,28 @@ QQC2.Button {
         }
         Rectangle {
             anchors.fill: parent
-            color: parent.color
-            border.width: 1
-            border.color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g, Kirigami.Theme.textColor.b, 0.3)
+            radius: sw.radius
+            color: sw.color
+        }
+        // bevel: lit from above
+        Rectangle {
+            anchors.fill: parent
+            radius: sw.radius
+            gradient: Gradient {
+                GradientStop { position: 0.0; color: Qt.rgba(1, 1, 1, 0.35) }
+                GradientStop { position: 0.45; color: Qt.rgba(1, 1, 1, 0.0) }
+                GradientStop { position: 0.8; color: Qt.rgba(0, 0, 0, 0.0) }
+                GradientStop { position: 1.0; color: Qt.rgba(0, 0, 0, 0.25) }
+            }
         }
         GradientBar {
             visible: parent.stops.length > 0
             anchors.left: parent.left
             anchors.right: parent.right
             anchors.bottom: parent.bottom
-            anchors.margins: 1
+            anchors.leftMargin: sw.radius
+            anchors.rightMargin: sw.radius
+            anchors.bottomMargin: 1
             height: 3
             radius: 0
             progress: 1
