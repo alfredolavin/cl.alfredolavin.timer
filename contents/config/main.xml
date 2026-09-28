@@ -9,13 +9,16 @@
 
     <group name="Appearance">
         <entry name="cornerRadius" type="Int"><default>6</default></entry>
-        <entry name="borderColor" type="String"><default>#3daee9</default></entry>
+        <!-- frame background and outline (also the buttons' borders); empty = derived from the older entries below -->
+        <entry name="frameBackgroundColor" type="String"><default></default></entry>
+        <entry name="frameOutlineColor" type="String"><default></default></entry>
         <entry name="borderWidth" type="Int"><default>2</default></entry>
-        <entry name="backgroundTransparency" type="Int"><default>30</default></entry>
         <entry name="padding" type="Int"><default>2</default></entry>
         <entry name="spacing" type="Int"><default>4</default></entry>
-        <!-- background and outlines take the gradient color at the end of the bar's fill;
-             luminosity -100 (black) .. 100 (white), chroma -100 (gray) .. 100 (double), opacity in % -->
+        <!-- older frame settings, no longer shown: read only while the two entries above are empty
+             (see legacyFrame in contents/ui/code/colorspec.js) -->
+        <entry name="borderColor" type="String"><default>#3daee9</default></entry>
+        <entry name="backgroundTransparency" type="Int"><default>30</default></entry>
         <entry name="linkColors" type="Bool"><default>false</default></entry>
         <entry name="linkedBgOpacity" type="Int"><default>60</default></entry>
         <entry name="linkedBgLuminosity" type="Int"><default>-50</default></entry>

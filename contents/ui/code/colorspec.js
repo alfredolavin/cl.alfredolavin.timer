@@ -74,6 +74,27 @@ function resolveString(str, stops, progress) {
     return resolve(parse(str), stops, progress);
 }
 
+// Frame background and outline before they had their own settings, from the older ones: the border color
+// (the background being it at 100 - transparency % opacity), or the gradient's current fill when
+// "follow the progress bar" (linkColors) was on. `o` has the old entries' names; `which` is "background" or "outline".
+function legacyFrame(which, o) {
+    var bg = which === "background";
+    if (o.linkColors)
+        return stringify({ src: "current", color: { r: 1, g: 1, b: 1, a: 1 },
+                           l: bg ? o.linkedBgLuminosity : o.linkedOutlineLuminosity,
+                           c: bg ? o.linkedBgChroma : o.linkedOutlineChroma,
+                           a: bg ? o.linkedBgOpacity : o.linkedOutlineOpacity });
+    var spec = parse(o.borderColor);
+    if (bg)
+        spec.a = spec.a * (100 - clamp(Number(o.backgroundTransparency) || 0, 0, 100)) / 100;
+    return stringify(spec);
+}
+
+// A frame color setting, or its value derived from the older settings while it is still empty
+function frameSpec(which, value, o) {
+    return value ? value : legacyFrame(which, o);
+}
+
 function css(c) {
     return Gradients.css(c);
 }

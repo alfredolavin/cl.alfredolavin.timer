@@ -50,20 +50,11 @@ Rectangle {
         const c = ColorSpec.resolveString(str, gradient.stops, fill);
         return Qt.rgba(c.r, c.g, c.b, c.a);
     }
-    readonly property color borderSpecColor: spec(cfg.borderColor)
-    // Gradient color at the end of the fill, when background and outlines follow it
-    readonly property var fillColor: cfg.linkColors && entry ? Gradients.colorAt(gradient.stops, fill) : null
-    readonly property color outlineColor: fillColor
-        ? linked(cfg.linkedOutlineLuminosity, cfg.linkedOutlineChroma, cfg.linkedOutlineOpacity) : borderSpecColor
-
-    function linked(luminosity, chroma, opacity) {
-        const c = Gradients.shade(fillColor, luminosity, chroma);
-        return Qt.rgba(c.r, c.g, c.b, opacity / 100);
-    }
+    // frame outline (also the buttons' borders) and background
+    readonly property color outlineColor: spec(ColorSpec.frameSpec("outline", cfg.frameOutlineColor, cfg))
 
     border.color: finished && app.blink ? Kirigami.Theme.negativeTextColor : outlineColor
-    color: fillColor ? linked(cfg.linkedBgLuminosity, cfg.linkedBgChroma, cfg.linkedBgOpacity)
-                     : Qt.rgba(borderSpecColor.r, borderSpecColor.g, borderSpecColor.b, borderSpecColor.a * (1 - cfg.backgroundTransparency / 100))
+    color: spec(ColorSpec.frameSpec("background", cfg.frameBackgroundColor, cfg))
 
     RowLayout {
         id: row

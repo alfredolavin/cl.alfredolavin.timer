@@ -27,7 +27,13 @@ KCM.SimpleKCM {
     property alias cfg_barTextOutlineWidth: outlineWidthSpin.value
 
     // Read only here, used by the preview
+    property string cfg_frameBackgroundColor
+    // older frame settings, used while cfg_frameBackgroundColor is empty
     property string cfg_borderColor
+    property bool cfg_linkColors
+    property int cfg_linkedBgOpacity
+    property int cfg_linkedBgLuminosity
+    property int cfg_linkedBgChroma
     property string cfg_runningState
     property int cfg_backgroundTransparency
     property int cfg_barRadius
@@ -99,8 +105,10 @@ KCM.SimpleKCM {
             radius: Kirigami.Units.cornerRadius
             color: stageCombo.currentIndex === 1 ? "#f4f4f4"
                  : stageCombo.currentIndex === 2 ? "#161616"
-                 : Qt.rgba(page.col(page.cfg_borderColor).r, page.col(page.cfg_borderColor).g, page.col(page.cfg_borderColor).b,
-                           page.col(page.cfg_borderColor).a * (1 - page.cfg_backgroundTransparency / 100))
+                 : page.col(ColorSpec.frameSpec("background", page.cfg_frameBackgroundColor, {
+                     borderColor: page.cfg_borderColor, backgroundTransparency: page.cfg_backgroundTransparency,
+                     linkColors: page.cfg_linkColors, linkedBgOpacity: page.cfg_linkedBgOpacity,
+                     linkedBgLuminosity: page.cfg_linkedBgLuminosity, linkedBgChroma: page.cfg_linkedBgChroma }))
             border.width: 1
             border.color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g, Kirigami.Theme.textColor.b, 0.15)
             readonly property color opaque: stageCombo.currentIndex === 0
