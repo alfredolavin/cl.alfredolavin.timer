@@ -29,6 +29,14 @@ KCM.SimpleKCM {
     property alias cfg_barTextOutlineWidth: outlineWidthSpin.value
     property alias cfg_nameFontSize: nameFontSize.value
     property alias cfg_timeFontSize: timeFontSize.value
+    property alias cfg_markerLine: markerLine.checked
+    property alias cfg_markerLineWidth: markerLineWidth.value
+    property alias cfg_markerCircle: markerCircle.checked
+    property alias cfg_markerCircleSize: markerCircleSize.value
+    property string cfg_markerCirclePosition
+    property alias cfg_markerColor: markerColor.value
+    property alias cfg_markerBlink: markerBlink.checked
+    property alias cfg_markerBlinkPeriod: markerBlinkPeriod.value
 
     // Read only here, used by the preview
     property string cfg_frameBackgroundColor
@@ -51,6 +59,9 @@ KCM.SimpleKCM {
     readonly property var glow: ({ enabled: glowEnabled.checked, color: page.col(glowColor.value),
                                    radius: glowRadius.value, strength: glowStrength.value, opacity: glowOpacity.value / 100 })
     property real previewProgress: 0.62
+    readonly property var marker: ({ line: markerLine.checked, lineWidth: markerLineWidth.value, circle: markerCircle.checked,
+                                     circleSize: markerCircleSize.value, circlePosition: cfg_markerCirclePosition,
+                                     color: col(markerColor.value), blink: markerBlink.checked, period: markerBlinkPeriod.value })
 
     // A configurable color as it looks in the preview (preview gradient, preview fill)
     function col(spec) {
@@ -135,6 +146,7 @@ KCM.SimpleKCM {
                     borderWidth: barBorderWidth.value
                     shadows: page.shadows
                     glow: page.glow
+                    marker: page.marker
                     shadow: page.cfg_textShadow
                     leftText: i18n("Tea")
                     leftFontSize: nameFontSize.value
@@ -163,6 +175,7 @@ KCM.SimpleKCM {
                         borderWidth: barBorderWidth.value
                         shadows: page.shadows
                         glow: page.glow
+                        marker: page.marker
                         shadow: page.cfg_textShadow
                         leftText: i18n("Tea")
                         leftFontSize: nameFontSize.value
@@ -307,6 +320,62 @@ KCM.SimpleKCM {
                 to: 5
                 textFromValue: v => i18np("%1 layer", "%1 layers", v)
                 valueFromText: t => parseInt(t) || 1
+            }
+
+            Kirigami.Separator { Kirigami.FormData.isSection: true; Kirigami.FormData.label: i18n("Progress marker") }
+
+            RowLayout {
+                Kirigami.FormData.label: i18n("Line:")
+                QQC2.CheckBox { id: markerLine; text: i18n("Vertical line where the fill ends") }
+                QQC2.SpinBox {
+                    id: markerLineWidth
+                    enabled: markerLine.checked
+                    from: 1
+                    to: 10
+                    textFromValue: v => i18n("%1 px", v)
+                    valueFromText: t => parseInt(t) || 1
+                }
+            }
+            RowLayout {
+                Kirigami.FormData.label: i18n("Circle:")
+                QQC2.CheckBox { id: markerCircle; text: i18n("Circle where the fill ends") }
+                QQC2.SpinBox {
+                    id: markerCircleSize
+                    enabled: markerCircle.checked
+                    from: 2
+                    to: 40
+                    textFromValue: v => i18n("%1 px", v)
+                    valueFromText: t => parseInt(t) || 2
+                }
+                QQC2.ComboBox {
+                    readonly property var positions: ["top", "middle", "bottom"]
+                    enabled: markerCircle.checked
+                    model: [i18n("At the top"), i18n("In the middle"), i18n("At the bottom")]
+                    currentIndex: Math.max(0, positions.indexOf(page.cfg_markerCirclePosition))
+                    onActivated: index => page.cfg_markerCirclePosition = positions[index]
+                }
+            }
+            ColorSpecButton {
+                id: markerColor
+                Kirigami.FormData.label: i18n("Color:")
+                enabled: markerLine.checked || markerCircle.checked
+                dialogTitle: i18n("Progress marker color")
+                gradients: page.gradients
+                runningState: page.cfg_runningState
+            }
+            RowLayout {
+                Kirigami.FormData.label: i18n("Blink:")
+                enabled: markerLine.checked || markerCircle.checked
+                QQC2.CheckBox { id: markerBlink; text: i18n("Blink every") }
+                QQC2.SpinBox {
+                    id: markerBlinkPeriod
+                    enabled: markerBlink.checked
+                    from: 200
+                    to: 5000
+                    stepSize: 100
+                    textFromValue: v => i18n("%1 s", (v / 1000).toLocaleString(Qt.locale(), "f", 1))
+                    valueFromText: t => Math.round(parseFloat(t.replace(",", ".")) * 1000) || 1000
+                }
             }
 
             Kirigami.Separator { Kirigami.FormData.isSection: true; Kirigami.FormData.label: i18n("Shadows") }

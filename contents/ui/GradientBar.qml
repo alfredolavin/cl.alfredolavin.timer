@@ -32,6 +32,9 @@ Item {
     property var labelColor: null
     property bool shadow: true
     property bool blink: false
+    // Marker at the end of the fill, or null:
+    // {line, lineWidth, circle, circleSize, circlePosition: "top"|"middle"|"bottom", color, blink, period (ms)}
+    property var marker: null
 
     readonly property real clamped: Math.max(0, Math.min(1, progress))
     readonly property bool split: leftText.length > 0
@@ -188,6 +191,48 @@ Item {
     onPadChanged: canvas.requestPaint()
     onWidthChanged: canvas.requestPaint()
     onHeightChanged: canvas.requestPaint()
+
+    // Progress marker: separate items over the fill, so moving and blinking it doesn't repaint the canvas
+    Item {
+        id: markerItem
+        readonly property var m: bar.marker
+        readonly property bool blinking: visible && !!m && !!m.blink
+        visible: !!m && (!!m.line || !!m.circle)
+        x: Math.round(bar.width * bar.clamped)
+        width: 0
+        height: bar.height
+
+        onBlinkingChanged: if (!blinking) opacity = 1
+
+        Rectangle {
+            id: markerLine
+            visible: !!markerItem.m && !!markerItem.m.line
+            width: markerItem.m ? Math.max(1, markerItem.m.lineWidth) : 1
+            height: parent.height
+            // centered on the fill's end, kept inside the bar at both ends
+            x: Math.max(-markerItem.x, Math.min(bar.width - markerItem.x - width, -width / 2))
+            color: markerItem.m ? markerItem.m.color : "transparent"
+        }
+        Rectangle {
+            readonly property int size: markerItem.m ? Math.max(2, markerItem.m.circleSize) : 2
+            readonly property string position: markerItem.m ? markerItem.m.circlePosition : "middle"
+            visible: !!markerItem.m && !!markerItem.m.circle
+            width: size
+            height: size
+            radius: size / 2
+            x: -size / 2
+            // centered on the bar's top edge, middle or bottom edge
+            y: position === "top" ? -size / 2 : position === "bottom" ? parent.height - size / 2 : (parent.height - size) / 2
+            color: markerItem.m ? markerItem.m.color : "transparent"
+        }
+
+        SequentialAnimation on opacity {
+            running: markerItem.blinking
+            loops: Animation.Infinite
+            NumberAnimation { to: 0.1; duration: markerItem.m ? Math.max(100, markerItem.m.period) / 2 : 500; easing.type: Easing.InOutSine }
+            NumberAnimation { to: 1; duration: markerItem.m ? Math.max(100, markerItem.m.period) / 2 : 500; easing.type: Easing.InOutSine }
+        }
+    }
 
     // Bundled Rubik (variable weight, Latin only); FontLoader caches it, so every bar shares one copy
     FontLoader {

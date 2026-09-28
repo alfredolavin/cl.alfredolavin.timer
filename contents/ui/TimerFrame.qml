@@ -52,6 +52,7 @@ Rectangle {
     }
     // a color property only notifies real changes, so the bar isn't repainted on every tick for it
     readonly property color glowColor: spec(ColorSpec.glowSpec(cfg.barGlowColor, cfg))
+    readonly property color markerColor: spec(cfg.markerColor)
     // frame outline (also the buttons' borders) and background
     readonly property color outlineColor: spec(ColorSpec.frameSpec("outline", cfg.frameOutlineColor, cfg))
 
@@ -104,6 +105,12 @@ Rectangle {
                 glow: ({ enabled: cfg.glowEnabled, color: frame.glowColor,
                          radius: cfg.glowRadius, strength: cfg.glowStrength, opacity: cfg.glowOpacity / 100 })
                 radius: cfg.barRadius
+                // only while a timer counts down
+                marker: frame.entry && !frame.finished
+                    ? { line: cfg.markerLine, lineWidth: cfg.markerLineWidth, circle: cfg.markerCircle, circleSize: cfg.markerCircleSize,
+                        circlePosition: cfg.markerCirclePosition, color: frame.markerColor, blink: cfg.markerBlink,
+                        period: cfg.markerBlinkPeriod }
+                    : null
                 // when finished: bold text at 95% of the bar height in the configured color
                 fontSize: !frame.entry ? frame.emptyFontSize
                         : frame.finished ? Math.max(6, Math.round(frame.barHeight * 0.95)) : cfg.timeFontSize

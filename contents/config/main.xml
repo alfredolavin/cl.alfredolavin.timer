@@ -63,6 +63,16 @@
         <entry name="barTextColor" type="String"><default>#ffffff</default></entry>
         <entry name="barTextOutlineColor" type="String"><default>#000000</default></entry>
         <entry name="barTextOutlineWidth" type="Int"><default>1</default></entry>
+        <!-- marker at the end of the fill: a vertical line and/or a circle centered on the bar's
+             top, middle or bottom (circlePosition "top"|"middle"|"bottom"); sizes in px, blink period in ms -->
+        <entry name="markerLine" type="Bool"><default>false</default></entry>
+        <entry name="markerLineWidth" type="Int"><default>2</default></entry>
+        <entry name="markerCircle" type="Bool"><default>false</default></entry>
+        <entry name="markerCircleSize" type="Int"><default>8</default></entry>
+        <entry name="markerCirclePosition" type="String"><default>middle</default></entry>
+        <entry name="markerColor" type="String"><default>#ffffff</default></entry>
+        <entry name="markerBlink" type="Bool"><default>false</default></entry>
+        <entry name="markerBlinkPeriod" type="Int"><default>1000</default></entry>
     </group>
 
     <group name="Timers">
