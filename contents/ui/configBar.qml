@@ -16,8 +16,10 @@ KCM.SimpleKCM {
     property alias cfg_barBorderWidth: barBorderWidth.value
     property string cfg_barShadows
     property alias cfg_glowEnabled: glowEnabled.checked
-    property alias cfg_glowUseGradient: glowFromGradient.checked
-    property alias cfg_glowColor: glowColor.value
+    property string cfg_barGlowColor
+    // older glow color settings, used while cfg_barGlowColor is empty
+    property bool cfg_glowUseGradient
+    property string cfg_glowColor
     property alias cfg_glowRadius: glowRadius.value
     property alias cfg_glowStrength: glowStrength.value
     property alias cfg_glowOpacity: glowOpacity.value
@@ -25,6 +27,8 @@ KCM.SimpleKCM {
     property alias cfg_barTextColor: textColorButton.value
     property alias cfg_barTextOutlineColor: outlineColorButton.value
     property alias cfg_barTextOutlineWidth: outlineWidthSpin.value
+    property alias cfg_nameFontSize: nameFontSize.value
+    property alias cfg_timeFontSize: timeFontSize.value
 
     // Read only here, used by the preview
     property string cfg_frameBackgroundColor
@@ -40,13 +44,11 @@ KCM.SimpleKCM {
     property int cfg_barWidth
     property int cfg_barHeightPercent
     property bool cfg_textShadow
-    property int cfg_nameFontSize
-    property int cfg_timeFontSize
     property string cfg_gradientsCss
 
     readonly property var gradients: Gradients.parse(cfg_gradientsCss || Gradients.defaultCss)
     readonly property var shadows: Util.parseShadows(cfg_barShadows)
-    readonly property var glow: ({ enabled: glowEnabled.checked, useGradient: glowFromGradient.checked, color: page.col(glowColor.value),
+    readonly property var glow: ({ enabled: glowEnabled.checked, color: page.col(glowColor.value),
                                    radius: glowRadius.value, strength: glowStrength.value, opacity: glowOpacity.value / 100 })
     property real previewProgress: 0.62
 
@@ -79,10 +81,8 @@ KCM.SimpleKCM {
 
     Component.onCompleted: {
         loadShadows(Util.parseShadows(cfg_barShadows));
-        glowFixed.checked = !glowFromGradient.checked;
     }
 
-    QQC2.ButtonGroup { buttons: [glowFromGradient, glowFixed] }
 
     Timer {
         running: animate.checked
@@ -137,7 +137,8 @@ KCM.SimpleKCM {
                     glow: page.glow
                     shadow: page.cfg_textShadow
                     leftText: i18n("Tea")
-                    leftFontSize: Math.round(height * 0.45)
+                    leftFontSize: nameFontSize.value
+                    fontSize: timeFontSize.value
                     fontWeight: weightSlider.value
                     textColor: page.col(textColorButton.value)
                     outlineColor: page.col(outlineColorButton.value)
@@ -164,8 +165,8 @@ KCM.SimpleKCM {
                         glow: page.glow
                         shadow: page.cfg_textShadow
                         leftText: i18n("Tea")
-                        leftFontSize: page.cfg_nameFontSize
-                        fontSize: page.cfg_timeFontSize
+                        leftFontSize: nameFontSize.value
+                        fontSize: timeFontSize.value
                         fontWeight: weightSlider.value
                         textColor: page.col(textColorButton.value)
                         outlineColor: page.col(outlineColorButton.value)
@@ -233,6 +234,18 @@ KCM.SimpleKCM {
 
             Kirigami.Separator { Kirigami.FormData.isSection: true; Kirigami.FormData.label: i18n("Text (name, time and messages)") }
 
+            component FontSizeSpin: QQC2.SpinBox {
+                from: 0
+                to: 60
+                editable: true
+                textFromValue: v => v === 0 ? i18n("Fill") : i18n("%1 px", v)
+                valueFromText: t => t === i18n("Fill") ? 0 : (parseInt(t) || 0)
+                QQC2.ToolTip.text: i18n("Fill: as large as the bar's height allows")
+                QQC2.ToolTip.visible: hovered
+                QQC2.ToolTip.delay: Kirigami.Units.toolTipDelay
+            }
+            FontSizeSpin { id: nameFontSize; Kirigami.FormData.label: i18n("Name size:") }
+            FontSizeSpin { id: timeFontSize; Kirigami.FormData.label: i18n("Time size:") }
             RowLayout {
                 Kirigami.FormData.label: i18n("Font weight:")
                 QQC2.Slider { id: weightSlider; from: 300; to: 900; stepSize: 50; Layout.preferredWidth: Kirigami.Units.gridUnit * 10 }
@@ -264,22 +277,15 @@ KCM.SimpleKCM {
             Kirigami.Separator { Kirigami.FormData.isSection: true; Kirigami.FormData.label: i18n("Glow") }
 
             QQC2.CheckBox { id: glowEnabled; Kirigami.FormData.label: i18n("Glow:"); text: i18n("Glow around the filled part") }
-            QQC2.RadioButton {
-                id: glowFromGradient
+            ColorSpecButton {
+                id: glowColor
                 Kirigami.FormData.label: i18n("Color:")
                 enabled: glowEnabled.checked
-                text: i18n("Gradient color at the end of the fill")
-            }
-            RowLayout {
-                enabled: glowEnabled.checked
-                QQC2.RadioButton { id: glowFixed; text: i18n("Chosen color:") }
-                ColorSpecButton {
-                    id: glowColor
-                    enabled: glowFixed.checked
-                    dialogTitle: i18n("Glow color")
-                    gradients: page.gradients
-                    runningState: page.cfg_runningState
-                }
+                dialogTitle: i18n("Glow color")
+                gradients: page.gradients
+                runningState: page.cfg_runningState
+                value: ColorSpec.glowSpec(page.cfg_barGlowColor, { glowUseGradient: page.cfg_glowUseGradient, glowColor: page.cfg_glowColor })
+                onEdited: page.cfg_barGlowColor = value
             }
             RowLayout {
                 Kirigami.FormData.label: i18n("Radius:")

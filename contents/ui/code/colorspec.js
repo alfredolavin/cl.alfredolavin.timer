@@ -95,6 +95,15 @@ function frameSpec(which, value, o) {
     return value ? value : legacyFrame(which, o);
 }
 
+// The glow color setting, or while empty the older choice: the gradient's current fill (glowUseGradient)
+// or the chosen glowColor
+function glowSpec(value, o) {
+    if (value)
+        return value;
+    return o.glowUseGradient ? stringify({ src: "current", color: { r: 1, g: 1, b: 1, a: 1 }, l: 0, c: 0, a: 100 })
+                             : String(o.glowColor || "#3daee9");
+}
+
 function css(c) {
     return Gradients.css(c);
 }

@@ -29,6 +29,7 @@
         <entry name="iconSize" type="Int"><default>32</default></entry>
         <entry name="useThemeIconColor" type="Bool"><default>true</default></entry>
         <entry name="iconColor" type="String"><default>#ffffff</default></entry>
+        <!-- pixel sizes of the name and the time inside the bar; 0 = fill the bar's height -->
         <entry name="nameFontSize" type="Int"><default>9</default></entry>
         <entry name="barWidth" type="Int"><default>100</default></entry>
         <entry name="barHeightPercent" type="Int"><default>60</default></entry>
@@ -49,6 +50,9 @@
         <!-- JSON array of {enabled, x, y, blur, spread, color, inset} -->
         <entry name="barShadows" type="String"><default>[{"enabled":true,"x":0,"y":1,"blur":3,"spread":0,"color":"#80000000","inset":false},{"enabled":true,"x":0,"y":1,"blur":2,"spread":0,"color":"#73000000","inset":true}]</default></entry>
         <entry name="glowEnabled" type="Bool"><default>true</default></entry>
+        <!-- empty = derived from the two older entries below -->
+        <entry name="barGlowColor" type="String"><default></default></entry>
+        <!-- older glow color settings, only read while barGlowColor is empty (see glowSpec in contents/ui/code/colorspec.js) -->
         <entry name="glowUseGradient" type="Bool"><default>true</default></entry>
         <entry name="glowColor" type="String"><default>#3daee9</default></entry>
         <entry name="glowRadius" type="Int"><default>6</default></entry>

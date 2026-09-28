@@ -13,13 +13,14 @@ Item {
     property real progress: 0
     property string text
     property string leftText
+    // pixel sizes of the name and the time; 0 = fill the bar's height
     property int leftFontSize: 9
     property color trackColor: Qt.rgba(0, 0, 0, 0.35)
     property color borderColor: "transparent"
     property int borderWidth: 0
     // [{enabled, x, y, blur, spread, color (a configurable color), inset}] like CSS box-shadow
     property var shadows: []
-    // {enabled, useGradient, color, radius, strength, opacity}
+    // {enabled, color, radius, strength, opacity}
     property var glow: null
     property real radius: 4
     property int fontSize: 0
@@ -129,8 +130,7 @@ Item {
 
             // 3. glow around the filled part
             if (bar.glowOn && fw > 0) {
-                const gc = bar.glow.useGradient ? Gradients.colorAt(bar.stops, bar.clamped)
-                                                : { r: bar.glow.color.r, g: bar.glow.color.g, b: bar.glow.color.b, a: bar.glow.color.a };
+                const gc = bar.glow.color;
                 const col = Gradients.css({ r: gc.r, g: gc.g, b: gc.b, a: gc.a * bar.glow.opacity });
                 for (let i = 0; i < Math.max(1, bar.glow.strength); ++i)
                     bar.shadowOnly(ctx, col, bar.glow.radius, 0, 0, () => bar.rounded(ctx, p, p, fw, h, r));
@@ -235,7 +235,7 @@ Item {
         text: bar.leftText
         visible: bar.split && width > 0
         color: bar.textColor
-        font.pixelSize: bar.leftFontSize
+        font.pixelSize: bar.leftFontSize > 0 ? bar.leftFontSize : Math.max(6, bar.height)
     }
 
     BarText {
@@ -249,7 +249,7 @@ Item {
         text: bar.text
         visible: text.length > 0
         color: bar.labelColor ?? bar.textColor
-        font.pixelSize: bar.fontSize > 0 ? bar.fontSize : Math.max(7, Math.round(bar.height * 0.62))
+        font.pixelSize: bar.fontSize > 0 ? bar.fontSize : Math.max(6, bar.height)
         font.features: { "tnum": 1 }
     }
 }

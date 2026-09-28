@@ -50,6 +50,8 @@ Rectangle {
         const c = ColorSpec.resolveString(str, gradient.stops, fill);
         return Qt.rgba(c.r, c.g, c.b, c.a);
     }
+    // a color property only notifies real changes, so the bar isn't repainted on every tick for it
+    readonly property color glowColor: spec(ColorSpec.glowSpec(cfg.barGlowColor, cfg))
     // frame outline (also the buttons' borders) and background
     readonly property color outlineColor: spec(ColorSpec.frameSpec("outline", cfg.frameOutlineColor, cfg))
 
@@ -99,7 +101,7 @@ Rectangle {
                 borderColor: frame.spec(cfg.barBorderColor)
                 borderWidth: cfg.barBorderWidth
                 shadows: Util.parseShadows(cfg.barShadows)
-                glow: ({ enabled: cfg.glowEnabled, useGradient: cfg.glowUseGradient, color: frame.spec(cfg.glowColor),
+                glow: ({ enabled: cfg.glowEnabled, color: frame.glowColor,
                          radius: cfg.glowRadius, strength: cfg.glowStrength, opacity: cfg.glowOpacity / 100 })
                 radius: cfg.barRadius
                 // when finished: bold text at 95% of the bar height in the configured color

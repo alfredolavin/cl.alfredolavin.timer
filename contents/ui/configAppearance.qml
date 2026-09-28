@@ -41,11 +41,9 @@ KCM.SimpleKCM {
     property alias cfg_iconSize: iconSize.value
     property alias cfg_useThemeIconColor: autoIconColor.checked
     property alias cfg_iconColor: iconColor.value
-    property alias cfg_nameFontSize: nameFontSize.value
     property alias cfg_barWidth: barWidth.value
     property alias cfg_barHeightPercent: barHeight.value
     property alias cfg_barRadius: barRadius.value
-    property alias cfg_timeFontSize: timeFontSize.value
     property alias cfg_textShadow: textShadow.checked
     property alias cfg_buttonIconSize: buttonIconSize.value
     property alias cfg_buttonBorderWidth: buttonBorderWidth.value
@@ -91,9 +89,8 @@ KCM.SimpleKCM {
             runningState: page.cfg_runningState
         }
 
-        Kirigami.Separator { Kirigami.FormData.isSection: true; Kirigami.FormData.label: i18n("Name and progress bar") }
+        Kirigami.Separator { Kirigami.FormData.isSection: true; Kirigami.FormData.label: i18n("Progress bar") }
 
-        QQC2.SpinBox { id: nameFontSize; Kirigami.FormData.label: i18n("Name font size (px):"); from: 5; to: 40 }
         QQC2.SpinBox { id: barWidth; Kirigami.FormData.label: i18n("Bar width (px):"); from: 30; to: 600 }
         RowLayout {
             Kirigami.FormData.label: i18n("Bar height:")
@@ -101,13 +98,6 @@ KCM.SimpleKCM {
             QQC2.Label { text: i18n("%1 % of the height", barHeight.value) }
         }
         QQC2.SpinBox { id: barRadius; Kirigami.FormData.label: i18n("Bar corner radius:"); from: 0; to: 30 }
-        QQC2.SpinBox {
-            id: timeFontSize
-            Kirigami.FormData.label: i18n("Time font size (px):")
-            from: 0; to: 40
-            textFromValue: v => v === 0 ? i18n("Auto") : v
-            valueFromText: t => t === i18n("Auto") ? 0 : parseInt(t)
-        }
         QQC2.CheckBox { id: textShadow; text: i18n("Contrasting shadow behind the time") }
         ColorSpecButton {
             id: finishedTextColor
