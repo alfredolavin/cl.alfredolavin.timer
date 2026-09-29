@@ -74,13 +74,20 @@ Item {
         ctx.closePath();
     }
 
+    // the Plasma color scheme, for shadow colors taken from it
+    SystemTheme {
+        id: sys
+    }
+    onSysMapChanged: canvas.requestPaint()
+    readonly property var sysMap: sys.map
+
     function cssOf(c) {
         return Gradients.css({ r: c.r, g: c.g, b: c.b, a: c.a });
     }
 
     // Shadow colors are configurable colors (code/colorspec.js), taken from this bar's gradient and fill
     function shadowCss(spec) {
-        return Gradients.css(ColorSpec.resolveString(spec, stops, clamped));
+        return Gradients.css(ColorSpec.resolveString(spec, stops, clamped, sys.map));
     }
 
     // Draws only the shadow of pathFn's shape: the shape itself is moved far away

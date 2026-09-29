@@ -11,6 +11,11 @@ import "code/colorspec.js" as ColorSpec
 Rectangle {
     id: frame
 
+    // the Plasma color scheme, for the "System" source of the configurable colors
+    SystemTheme {
+        id: sys
+    }
+
     property var app
     property string uid
     default property alias extraButtons: extras.data
@@ -50,6 +55,20 @@ Rectangle {
     readonly property var baseColor: Gradients.over({ r: color.r, g: color.g, b: color.b, a: color.a },
         { r: Kirigami.Theme.backgroundColor.r, g: Kirigami.Theme.backgroundColor.g, b: Kirigami.Theme.backgroundColor.b, a: 1 })
     readonly property color contrastColor: Gradients.prefersDark(baseColor) ? "#1b1b1b" : "#f5f5f5"
+    // Icon over the bar (the bar is the widget): the fill sweeps under it, so its color is mixed between the best
+    // contrast against the empty track and against the gradient under the icon, by how much of it the fill covers
+    readonly property real iconCovered: iconItem.width > 0 && width > 0
+        ? Math.max(0, Math.min(1, (width * fill - row.x) / iconItem.width)) : 0
+    readonly property color iconContrastColor: {
+        const track = spec(cfg.trackColor);
+        const g = Gradients.colorAt(gradient.stops, Math.max(0, Math.min(1, (row.x + iconItem.width / 2) / Math.max(1, width))));
+        const onTrack = Gradients.over({ r: track.r, g: track.g, b: track.b, a: track.a }, baseColor);
+        const onFill = Gradients.over(g, baseColor);
+        const a = Gradients.prefersDark(onTrack) ? 0.11 : 0.96;
+        const b = Gradients.prefersDark(onFill) ? 0.11 : 0.96;
+        const v = a + (b - a) * iconCovered;
+        return Qt.rgba(v, v, v, 1);
+    }
 
     implicitWidth: row.implicitWidth + 2 * inset
     implicitHeight: Math.max(cfg.iconSize, cfg.buttonIconSize + 2 * (cfg.buttonBorderWidth + 1)) + 2 * inset
@@ -58,7 +77,7 @@ Rectangle {
     readonly property real fill: entry ? app.progressOf(entry) : 0
     // A configurable color (code/colorspec.js) resolved with this frame's gradient and fill
     function spec(str) {
-        const c = ColorSpec.resolveString(str, gradient.stops, fill);
+        const c = ColorSpec.resolveString(str, gradient.stops, fill, sys.map);
         return Qt.rgba(c.r, c.g, c.b, c.a);
     }
     // a color property only notifies real changes, so the bar isn't repainted on every tick for it
@@ -77,13 +96,14 @@ Rectangle {
         spacing: cfg.spacing
 
         SvgIcon {
+            id: iconItem
             readonly property int px: Math.min(cfg.iconSize, frame.inner)
             Layout.preferredWidth: px
             Layout.preferredHeight: px
             Layout.alignment: Qt.AlignVCenter
             hex: frame.entry ? frame.entry.icon : "f051b"
-            // over the bar it takes the bar's text color
-            color: !cfg.useThemeIconColor ? frame.spec(cfg.iconColor) : frame.container ? frame.spec(cfg.barTextColor) : frame.contrastColor
+            // over the bar it fades between black and white as the fill passes behind it
+            color: !cfg.useThemeIconColor ? frame.spec(cfg.iconColor) : frame.container ? frame.iconContrastColor : frame.contrastColor
             opacity: frame.finished && frame.app.blink ? 0.3 : 1
         }
 

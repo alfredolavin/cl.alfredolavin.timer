@@ -1,0 +1,3 @@
+# agent_history.txt — requests made to Claude for this project, as Claude understood them
+
+2026-09-29: Port the "System" color source (Plasma theme colors, with luminosity/chroma/opacity adjustments), first built for cl.alfredolavin.turbotodo, back into this timer plasmoid: shared colorspec.js, a SystemTheme helper, the color selector's new source and combo box, and every place that resolves a configurable color (frame, bar shadows, previews).

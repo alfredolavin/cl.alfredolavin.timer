@@ -1,2 +1,24 @@
+# Editors / IDEs
+.vscode/
+.idea/
+*.swp
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Dependencies / build output
+node_modules/
+build/
+dist/
+*.plasmoid
+
+# Local environment
+.env
+.env.*
+.venv/
 __pycache__/
-*.pyc
+
+# Logs
+*.log

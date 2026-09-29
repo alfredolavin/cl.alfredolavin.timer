@@ -1,12 +1,39 @@
 .pragma library
 .import "gradients.js" as Gradients
 
-// A configurable color: a fixed color or one taken from the active gradient (its begin, its end, or
-// where the fill currently ends), adjusted in OKLCH (luminosity and chroma) and in opacity.
-// Stored as JSON {src, color, l, c, a}; plain colors ("#rrggbb", "#aarrggbb", KConfig "r,g,b[,a]")
+// A configurable color: a fixed color, a system (Plasma theme) color, or one taken from the item's gradient
+// (its begin, its end, or its middle), adjusted in OKLCH (luminosity and chroma) and in opacity.
+// Stored as JSON {src, color, sys, l, c, a}; plain colors ("#rrggbb", "#aarrggbb", KConfig "r,g,b[,a]")
 // read as fixed colors, so older settings keep working.
+// System colors live in Kirigami.Theme, which a library cannot see: callers pass `theme`, an object from
+// SystemTheme.qml mapping the names below to {r, g, b, a}, so they follow the Plasma color scheme live.
 
-var SOURCES = ["fixed", "begin", "end", "current"];
+var SOURCES = ["fixed", "system", "begin", "end", "current"];
+
+// [Kirigami.Theme property, label]
+var SYSTEM = [
+    ["textColor", "Text"],
+    ["backgroundColor", "Background"],
+    ["alternateBackgroundColor", "Alternate background"],
+    ["highlightColor", "Highlight"],
+    ["highlightedTextColor", "Highlighted text"],
+    ["focusColor", "Focus ring"],
+    ["hoverColor", "Hover"],
+    ["linkColor", "Link"],
+    ["visitedLinkColor", "Visited link"],
+    ["activeTextColor", "Active text"],
+    ["disabledTextColor", "Disabled text"],
+    ["positiveTextColor", "Positive"],
+    ["neutralTextColor", "Neutral"],
+    ["negativeTextColor", "Negative"]
+];
+
+function systemKey(k) {
+    for (var i = 0; i < SYSTEM.length; ++i)
+        if (SYSTEM[i][0] === k)
+            return k;
+    return "textColor";
+}
 
 function clamp(v, lo, hi) {
     return Math.max(lo, Math.min(hi, v));
@@ -33,13 +60,14 @@ function hexOf(c) {
 }
 
 function parse(str) {
-    var spec = { src: "fixed", color: { r: 1, g: 1, b: 1, a: 1 }, l: 0, c: 0, a: 100 };
+    var spec = { src: "fixed", color: { r: 1, g: 1, b: 1, a: 1 }, sys: "textColor", l: 0, c: 0, a: 100 };
     var s = String(str || "").trim();
     if (s.charAt(0) === "{") {
         try {
             var o = JSON.parse(s);
             spec.src = SOURCES.indexOf(o.src) >= 0 ? o.src : "fixed";
             spec.color = parseColor(o.color) || spec.color;
+            spec.sys = systemKey(o.sys);
             spec.l = clamp(Number(o.l) || 0, -100, 100);
             spec.c = clamp(Number(o.c) || 0, -100, 100);
             spec.a = clamp(isNaN(Number(o.a)) ? 100 : Number(o.a), 0, 100);
@@ -51,27 +79,32 @@ function parse(str) {
 }
 
 function stringify(spec) {
-    return JSON.stringify({ src: spec.src, color: hexOf(spec.color), l: Math.round(spec.l), c: Math.round(spec.c), a: Math.round(spec.a) });
+    return JSON.stringify({ src: spec.src, color: hexOf(spec.color), sys: systemKey(spec.sys), l: Math.round(spec.l), c: Math.round(spec.c), a: Math.round(spec.a) });
 }
 
-// The color before adjustments: the fixed color, or the gradient's color at its begin, end or fill (0..1)
-function baseOf(spec, stops, progress) {
+// The color before adjustments: the fixed color, the system color, or the gradient's color at its begin, end or
+// middle (progress 0..1)
+function baseOf(spec, stops, progress, theme) {
+    if (spec.src === "system") {
+        var t = theme && theme[systemKey(spec.sys)];
+        return t ? { r: t.r, g: t.g, b: t.b, a: t.a === undefined ? 1 : t.a } : { r: 1, g: 1, b: 1, a: 1 };
+    }
     if (spec.src === "fixed" || !stops || !stops.length)
         return spec.color;
     var g = Gradients.colorAt(stops, spec.src === "begin" ? 0 : spec.src === "end" ? 1 : clamp(progress, 0, 1));
     return { r: g.r, g: g.g, b: g.b, a: 1 };
 }
 
-// The color a spec stands for, given the active gradient's stops and the fill (0..1)
-function resolve(spec, stops, progress) {
-    var base = baseOf(spec, stops, progress);
+// The color a spec stands for, given the item's gradient stops, the position in it (0..1) and the system colors
+function resolve(spec, stops, progress, theme) {
+    var base = baseOf(spec, stops, progress, theme);
     var out = spec.l || spec.c ? Gradients.shade(base, spec.l, spec.c) : base;
     return { r: out.r, g: out.g, b: out.b, a: clamp(base.a * spec.a / 100, 0, 1) };
 }
 
 // Shortcut for stored strings
-function resolveString(str, stops, progress) {
-    return resolve(parse(str), stops, progress);
+function resolveString(str, stops, progress, theme) {
+    return resolve(parse(str), stops, progress, theme);
 }
 
 // Frame background and outline before they had their own settings, from the older ones: the border color

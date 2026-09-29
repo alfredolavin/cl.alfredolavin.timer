@@ -11,6 +11,11 @@ import "code/colorspec.js" as ColorSpec
 KCM.SimpleKCM {
     id: page
 
+    // the Plasma color scheme, for the "System" source of the configurable colors
+    SystemTheme {
+        id: sys
+    }
+
     property alias cfg_trackColor: trackColor.value
     property alias cfg_barBorderColor: barBorderColor.value
     property alias cfg_barBorderWidth: barBorderWidth.value
@@ -66,7 +71,7 @@ KCM.SimpleKCM {
 
     // A configurable color as it looks in the preview (preview gradient, preview fill)
     function col(spec) {
-        const c = ColorSpec.resolveString(spec, stage.stops, previewProgress);
+        const c = ColorSpec.resolveString(spec, stage.stops, previewProgress, sys.map);
         return Qt.rgba(c.r, c.g, c.b, c.a);
     }
 

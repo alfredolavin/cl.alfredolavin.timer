@@ -38,12 +38,22 @@ QQC2.Button {
     readonly property var choices: (current ? [{ name: i18n("Running: %1", current.name), stops: current.stops, progress: current.progress }] : [])
         .concat(gradients.map(g => ({ name: g.name, stops: g.stops, progress: -1 })))
 
+    // the Plasma color scheme, for the "System" source
+    SystemTheme {
+        id: sys
+    }
+
     function sourceName(src) {
         return src === "begin" ? i18n("Gradient begin") : src === "end" ? i18n("Gradient end")
-             : src === "current" ? i18n("Current fill") : i18n("Fixed");
+             : src === "current" ? i18n("Current fill") : src === "system" ? i18n("System") : i18n("Fixed");
+    }
+    function systemName(key) {
+        const e = ColorSpec.SYSTEM.find(x => x[0] === key);
+        return e ? i18n(e[1]) : key;
     }
     function summary(s) {
-        const parts = [s.src === "fixed" ? ColorSpec.hexOf(s.color).replace(/^#ff/, "#") : sourceName(s.src)];
+        const parts = [s.src === "fixed" ? ColorSpec.hexOf(s.color).replace(/^#ff/, "#")
+                     : s.src === "system" ? i18n("System: %1", systemName(s.sys)) : sourceName(s.src)];
         const adj = [];
         if (s.l)
             adj.push("L" + (s.l > 0 ? "+" : "−") + Math.abs(s.l));
@@ -62,7 +72,7 @@ QQC2.Button {
     // the button's own swatch uses the first preview choice at its fill (60 % for a plain gradient)
     readonly property var buttonSample: choices.length ? choices[0] : null
     readonly property color resolved: qcolor(ColorSpec.resolve(spec, buttonSample ? buttonSample.stops : [],
-                                                                buttonSample && buttonSample.progress >= 0 ? buttonSample.progress : 0.6))
+                                                                buttonSample && buttonSample.progress >= 0 ? buttonSample.progress : 0.6, sys.map))
 
     QQC2.ToolTip.text: i18n("Click to change")
     QQC2.ToolTip.visible: hovered
@@ -231,12 +241,13 @@ QQC2.Button {
                     readonly property var stops: choice ? choice.stops : []
                     readonly property real fill: choice && choice.progress >= 0 ? choice.progress : fillSlider.value
                     // base color of the edited source (before adjustments) in the preview
-                    readonly property var base: ColorSpec.baseOf(edited, stops, fill)
-                    readonly property var result: ColorSpec.resolve(edited, stops, fill)
-                    readonly property string key: JSON.stringify([edited, stops.length ? stops.map(s => s.css) : [], fill])
+                    readonly property var base: ColorSpec.baseOf(edited, stops, fill, sys.map)
+                    readonly property var result: ColorSpec.resolve(edited, stops, fill, sys.map)
+                    readonly property string key: JSON.stringify([edited, stops.length ? stops.map(s => s.css) : [], fill, sys.map])
 
                     function load(s) {
-                        edited = { src: s.src, color: s.color, l: s.l, c: s.c, a: s.a };
+                        edited = { src: s.src, color: s.color, sys: s.sys, l: s.l, c: s.c, a: s.a };
+                        sysCombo.currentIndex = Math.max(0, ColorSpec.SYSTEM.findIndex(x => x[0] === s.sys));
                         luminosity.value = s.l;
                         chroma.value = s.c;
                         opacitySlider.value = s.a;
@@ -269,7 +280,7 @@ QQC2.Button {
                                 Swatch {
                                     Layout.preferredWidth: Kirigami.Units.gridUnit
                                     Layout.preferredHeight: Kirigami.Units.gridUnit * 0.8
-                                    color: btn.qcolor(ColorSpec.baseOf({ src: modelData, color: editor.edited.color }, editor.stops, editor.fill))
+                                    color: btn.qcolor(ColorSpec.baseOf({ src: modelData, color: editor.edited.color, sys: editor.edited.sys }, editor.stops, editor.fill, sys.map))
                                 }
                             }
                         }
@@ -280,6 +291,39 @@ QQC2.Button {
                         enabled: editor.edited.src === "fixed"
                         showAlphaChannel: true
                         onAccepted: c => editor.set("color", { r: c.r, g: c.g, b: c.b, a: c.a })
+                    }
+                    QQC2.ComboBox {
+                        id: sysCombo
+                        Kirigami.FormData.label: i18n("System color:")
+                        enabled: editor.edited.src === "system"
+                        Layout.preferredWidth: Kirigami.Units.gridUnit * 14
+                        model: ColorSpec.SYSTEM
+                        onActivated: index => editor.set("sys", ColorSpec.SYSTEM[index][0])
+                        delegate: QQC2.ItemDelegate {
+                            required property var modelData
+                            required property int index
+                            width: sysCombo.popup.width
+                            highlighted: sysCombo.highlightedIndex === index
+                            contentItem: RowLayout {
+                                spacing: Kirigami.Units.smallSpacing
+                                Swatch {
+                                    Layout.preferredWidth: Kirigami.Units.gridUnit * 1.4
+                                    Layout.preferredHeight: Kirigami.Units.gridUnit * 0.9
+                                    color: btn.qcolor(sys.map[modelData[0]])
+                                }
+                                QQC2.Label {
+                                    Layout.fillWidth: true
+                                    text: i18n(modelData[1])
+                                    elide: Text.ElideRight
+                                }
+                            }
+                        }
+                        contentItem: QQC2.Label {
+                            leftPadding: Kirigami.Units.smallSpacing
+                            verticalAlignment: Text.AlignVCenter
+                            text: sysCombo.currentIndex >= 0 ? i18n(ColorSpec.SYSTEM[sysCombo.currentIndex][1]) : ""
+                            elide: Text.ElideRight
+                        }
                     }
 
                     // ---- adjustments ----

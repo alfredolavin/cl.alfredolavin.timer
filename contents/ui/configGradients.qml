@@ -12,6 +12,11 @@ import "code/colorspec.js" as ColorSpec
 KCM.SimpleKCM {
     id: page
 
+    // the Plasma color scheme, for the "System" source of the configurable colors
+    SystemTheme {
+        id: sys
+    }
+
     // Stored as CSS (one commented linear-gradient per entry) so every other page just parses it
     property string cfg_gradientsCss
     // Renaming a gradient also renames it in the timers that use it
@@ -830,7 +835,7 @@ KCM.SimpleKCM {
                         trackColor: col(page.cfg_trackColor)
                         borderColor: col(page.cfg_barBorderColor)
                         function col(spec) {
-                            const c = ColorSpec.resolveString(spec, stops, progress);
+                            const c = ColorSpec.resolveString(spec, stops, progress, sys.map);
                             return Qt.rgba(c.r, c.g, c.b, c.a);
                         }
                         borderWidth: page.cfg_barBorderWidth
