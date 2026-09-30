@@ -126,3 +126,29 @@ function adjustments(s) {
     if (s.h) adj.push(part("H", s.h));
     return adj.join(" ");
 }
+
+// OKLCH (L 0..1, C ~0..0.4, hue in degrees) -> sRGB. Out-of-gamut colors keep their lightness and hue and
+// lose chroma until they fit, so vivid colors stay as vivid as the display allows instead of shifting hue.
+function fromOklch(L, C, hueDeg, alpha) {
+    var hr = hueDeg * Math.PI / 180;
+    function lin(c) {
+        var A = c * Math.cos(hr), B = c * Math.sin(hr);
+        var l = Math.pow(L + 0.3963377774 * A + 0.2158037573 * B, 3);
+        var m = Math.pow(L - 0.1055613458 * A - 0.0638541728 * B, 3);
+        var s = Math.pow(L - 0.0894841775 * A - 1.2914855480 * B, 3);
+        return [4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s,
+                -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s,
+                -0.0041960863 * l - 0.7034186147 * m + 1.7076147010 * s];
+    }
+    function inGamut(v) { return v[0] >= -0.0005 && v[0] <= 1.0005 && v[1] >= -0.0005 && v[1] <= 1.0005 && v[2] >= -0.0005 && v[2] <= 1.0005; }
+    var c = Math.max(0, C), v = lin(c);
+    if (!inGamut(v)) {
+        var lo = 0, hi = c;
+        for (var i = 0; i < 16; ++i) {
+            var mid = (lo + hi) / 2;
+            if (inGamut(lin(mid))) lo = mid; else hi = mid;
+        }
+        v = lin(lo);
+    }
+    return { r: toGamma(clamp(v[0], 0, 1)), g: toGamma(clamp(v[1], 0, 1)), b: toGamma(clamp(v[2], 0, 1)), a: alpha === undefined ? 1 : alpha };
+}
