@@ -91,12 +91,6 @@ KCM.SimpleKCM {
         }
     }
 
-    IconPicker {
-        id: quickIconPicker
-        selected: page.cfg_quickIcon || "f051b"
-        onPicked: hex => page.cfg_quickIcon = hex
-    }
-
     RowLayout {
         spacing: Kirigami.Units.largeSpacing
 
@@ -311,21 +305,9 @@ KCM.SimpleKCM {
                     text: i18n("Icon of quick timers and alarms:")
                     elide: Text.ElideRight
                 }
-                QQC2.Button {
-                    implicitWidth: Kirigami.Units.gridUnit * 3
-                    implicitHeight: implicitWidth
-                    QQC2.ToolTip.text: i18n("Choose an icon")
-                    QQC2.ToolTip.visible: hovered
-                    onClicked: quickIconPicker.open()
-                    contentItem: Item {
-                        SvgIcon {
-                            anchors.centerIn: parent
-                            width: Kirigami.Units.gridUnit * 1.8
-                            height: width
-                            hex: page.cfg_quickIcon || "f051b"
-                            color: Kirigami.Theme.textColor
-                        }
-                    }
+                IconChooserButton {
+                    hex: page.cfg_quickIcon || "f051b"
+                    onPicked: id => page.cfg_quickIcon = id
                 }
                 QQC2.ToolButton {
                     icon.name: "edit-clear"
