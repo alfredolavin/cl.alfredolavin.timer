@@ -1,0 +1,4 @@
+[submodule "contents/ui/colorspec"]
+	path = contents/ui/colorspec
+	url = git@github.com:alfredolavin/colorspec.git
+	branch = main
