@@ -3,7 +3,7 @@ import QtQuick.Controls as QQC2
 import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 
-import "code/gradients.js" as Gradients
+import "ColorSpecCore.js" as Core
 
 // Slider (no tick marks) with a strip above it painting the color each value gives, and the value beside it
 RowLayout {
@@ -49,7 +49,7 @@ RowLayout {
                 const n = 24;
                 for (let i = 0; i <= n; ++i) {
                     const c = root.colorAt(slider.from + (slider.to - slider.from) * i / n);
-                    g.addColorStop(i / n, Gradients.css({ r: c.r, g: c.g, b: c.b, a: c.a === undefined ? 1 : c.a }));
+                    g.addColorStop(i / n, Core.css({ r: c.r, g: c.g, b: c.b, a: c.a === undefined ? 1 : c.a }));
                 }
                 ctx.fillStyle = g;
                 ctx.fillRect(0, 0, width, height);
