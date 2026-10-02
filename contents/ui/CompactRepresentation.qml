@@ -59,6 +59,17 @@ Item {
             }
         }
 
+        // keeps the panel above all windows; only in a panel
+        IconButton {
+            visible: compact.app.pin.available
+            size: frame.buttonSize
+            borderColor: frame.outlineColor
+            iconName: "window-pin"
+            checked: compact.app.pin.pinned
+            tooltip: compact.app.pin.pinned ? i18n("Let windows cover the panel again") : i18n("Show the panel over all windows")
+            onClicked: compact.app.pin.toggle()
+        }
+
     }
 
     HoverHandler {

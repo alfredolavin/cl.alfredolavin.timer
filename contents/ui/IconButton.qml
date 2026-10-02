@@ -10,6 +10,8 @@ Rectangle {
     property string iconName
     property int size: 32
     property string tooltip
+    // toggle buttons: drawn with a highlight tint while on
+    property bool checked: false
     property color borderColor: Kirigami.Theme.textColor
     readonly property color hl: Kirigami.Theme.highlightColor
     signal clicked
@@ -20,7 +22,8 @@ Rectangle {
     border.width: Plasmoid.configuration.buttonBorderWidth
     border.color: mouse.containsMouse ? hl : borderColor
     color: mouse.pressed ? Qt.rgba(hl.r, hl.g, hl.b, 0.5)
-         : mouse.containsMouse ? Qt.rgba(hl.r, hl.g, hl.b, 0.25) : "transparent"
+         : mouse.containsMouse ? Qt.rgba(hl.r, hl.g, hl.b, 0.25)
+         : checked ? Qt.rgba(hl.r, hl.g, hl.b, 0.35) : "transparent"
     opacity: enabled ? 1 : 0.4
 
     Behavior on color { ColorAnimation { duration: Kirigami.Units.shortDuration } }

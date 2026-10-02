@@ -7,9 +7,25 @@ import org.kde.kirigami as Kirigami
 import "code/util.js" as Util
 import "gradientpicker"
 import "code/gradients.js" as Gradients
+import "panelpin"
 
 PlasmoidItem {
     id: root
+
+    // keeps the panel above all windows (pin button / context menu)
+    PanelPin { id: panelPin }
+    readonly property var pin: panelPin
+
+    Plasmoid.contextualActions: [
+        PlasmaCore.Action {
+            text: i18n("Show the panel over all windows")
+            icon.name: "window-pin"
+            checkable: true
+            checked: panelPin.pinned
+            visible: panelPin.available
+            onTriggered: panelPin.toggle()
+        }
+    ]
 
     // true while a window opened from the popup (gradient chooser) has the focus: keep the popup open
     property bool popupBusy: false
