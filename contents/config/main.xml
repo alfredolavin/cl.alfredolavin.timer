@@ -88,7 +88,7 @@
         <entry name="quickGradient" type="String"><default></default></entry>
         <!-- icon (codepoint hex) of one-off timers and alarms from the popup's quick entry; empty = automatic (alarm bell / timer icon) -->
         <entry name="quickIcon" type="String"><default></default></entry>
-        <!-- CSS gradients; empty means built-in defaults -->
+        <!-- legacy: the per-widget list, only read once to seed the user-wide ~/.config/plasma-gradients/gradients.css -->
         <entry name="gradientsCss" type="String"><default></default></entry>
         <!-- visibility mode of the hosting panel while it is forced visible by a finished timer; -1 = not forced -->
         <entry name="savedPanelVisibility" type="Int"><default>-1</default></entry>

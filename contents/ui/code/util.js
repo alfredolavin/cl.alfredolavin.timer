@@ -60,36 +60,44 @@ function nextOccurrence(at, nowMs) {
     return d.getTime();
 }
 
-// Quick entry. Durations: "25" (minutes), "90s", "5m", "1h30", "1h 30m 10s", "8,5" (8.5 minutes = 8m30s).
-// Times of day (alarms): "14:30", "7pm", "7:30 am", "8." (8:00), "8.50" (8:50). Returns null when not understood.
+// Quick entry. A "+" prefix (or none) makes a timer, a "-" prefix makes an alarm. A bare number is hours.
+// Timer: "2" (2h), "2:30", "1,5" (1.5h), "1h30", "90s", "5m", "1h 30m 10s", "0.45" (0h45).
+// Alarm (time of day): "-2" (2:00), "-14:30", "-7pm", "-7:30 am", "-8.50" (8:50).
+// Returns null when not understood.
 function parseQuick(text) {
     var s = (text || "").toLowerCase().replace(/\s+/g, "");
+    var alarm = false;
+    if (s[0] === "+" || s[0] === "-") {
+        alarm = s[0] === "-";
+        s = s.substr(1);
+    }
     if (!s)
         return null;
-    var m = s.match(/^(\d{1,2})(?::(\d{2}))?([ap])\.?m?\.?$/);
-    if (m) {
-        var h12 = parseInt(m[1], 10), m12 = m[2] ? parseInt(m[2], 10) : 0;
-        if (h12 < 1 || h12 > 12 || m12 > 59)
+    var m;
+    if (alarm) {
+        m = s.match(/^(\d{1,2})(?::(\d{2}))?([ap])\.?m?\.?$/);
+        if (m) {
+            var h12 = parseInt(m[1], 10), m12 = m[2] ? parseInt(m[2], 10) : 0;
+            if (h12 < 1 || h12 > 12 || m12 > 59)
+                return null;
+            return { kind: "alarm", at: (h12 % 12 + (m[3] === "p" ? 12 : 0)) * 60 + m12 };
+        }
+        // "8", "14:30", "8." or "8.50": a clock time (the dot works like a colon)
+        m = s.match(/^(\d{1,2})(?:[:.](\d{0,2}))?$/);
+        if (!m)
             return null;
-        return { kind: "alarm", at: (h12 % 12 + (m[3] === "p" ? 12 : 0)) * 60 + m12 };
-    }
-    m = s.match(/^(\d{1,2}):(\d{2})$/);
-    if (m) {
-        var h = parseInt(m[1], 10), min = parseInt(m[2], 10);
+        var h = parseInt(m[1], 10), min = m[2] ? parseInt(m[2].padEnd(2, "0"), 10) : 0;
         return h < 24 && min < 60 ? { kind: "alarm", at: h * 60 + min } : null;
-    }
-    // "8." or "8.50": a clock time typed with a dot instead of a colon
-    m = s.match(/^(\d{1,2})\.(\d{0,2})$/);
-    if (m) {
-        var hDot = parseInt(m[1], 10), minDot = m[2] ? parseInt(m[2].padEnd(2, "0"), 10) : 0;
-        return hDot < 24 && minDot < 60 ? { kind: "alarm", at: hDot * 60 + minDot } : null;
     }
     var sec = -1;
     if (/^\d+$/.test(s))
-        sec = parseInt(s, 10) * 60;
-    // "8,5": a decimal number of minutes typed with a comma
+        sec = parseInt(s, 10) * 3600;
+    // "2:30" / "0.45": hours and minutes
+    else if ((m = s.match(/^(\d+)[:.](\d{0,2})$/)))
+        sec = parseInt(m[1], 10) * 3600 + parseInt((m[2] || "0").padEnd(2, "0"), 10) * 60;
+    // "1,5": a decimal number of hours typed with a comma
     else if ((m = s.match(/^(\d+),(\d+)$/)))
-        sec = Math.round(parseFloat(m[1] + "." + m[2]) * 60);
+        sec = Math.round(parseFloat(m[1] + "." + m[2]) * 3600);
     else if ((m = s.match(/^(\d+)h(\d+)$/)))
         sec = parseInt(m[1], 10) * 3600 + parseInt(m[2], 10) * 60;
     else if ((m = s.match(/^(?:(\d+)h)?(?:(\d+)m(?:in)?)?(?:(\d+)s)?$/)))

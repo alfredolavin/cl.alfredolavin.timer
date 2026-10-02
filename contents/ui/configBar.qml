@@ -5,6 +5,7 @@ import org.kde.kirigami as Kirigami
 import org.kde.kcmutils as KCM
 
 import "code/util.js" as Util
+import "gradientpicker"
 import "code/gradients.js" as Gradients
 import "code/colorspec.js" as ColorSpec
 
@@ -58,9 +59,8 @@ KCM.SimpleKCM {
     property bool cfg_barFillWidth
     property int cfg_barHeightPercent
     property bool cfg_textShadow
-    property string cfg_gradientsCss
 
-    readonly property var gradients: Gradients.parse(cfg_gradientsCss || Gradients.defaultCss)
+    readonly property var gradients: GradientStore.gradients
     readonly property var shadows: Util.parseShadows(cfg_barShadows)
     readonly property var glow: ({ enabled: glowEnabled.checked, color: page.col(glowColor.value),
                                    radius: glowRadius.value, strength: glowStrength.value, opacity: glowOpacity.value / 100 })
@@ -133,7 +133,7 @@ KCM.SimpleKCM {
                           color.g * color.a + Kirigami.Theme.backgroundColor.g * (1 - color.a),
                           color.b * color.a + Kirigami.Theme.backgroundColor.b * (1 - color.a), 1)
                 : color
-            readonly property var stops: page.gradients.length ? page.gradients[Math.max(0, gradientCombo.currentIndex)].stops : []
+            readonly property var stops: GradientStore.find(gradientCombo.selected).stops
 
             ColumnLayout {
                 anchors.centerIn: parent
@@ -200,11 +200,11 @@ KCM.SimpleKCM {
             Layout.fillWidth: true
             Layout.leftMargin: Kirigami.Units.smallSpacing
             Layout.rightMargin: Kirigami.Units.smallSpacing
-            QQC2.ComboBox {
+            GradientChooserButton {
                 id: gradientCombo
-                model: page.gradients
-                textRole: "name"
                 Layout.preferredWidth: Kirigami.Units.gridUnit * 9
+                selected: GradientStore.gradients.length ? GradientStore.gradients[0].name : ""
+                QQC2.ToolTip.text: i18n("Gradient of the preview")
             }
             QQC2.ComboBox {
                 id: stageCombo

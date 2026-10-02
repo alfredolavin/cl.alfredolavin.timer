@@ -5,16 +5,21 @@ import org.kde.plasma.core as PlasmaCore
 import org.kde.kirigami as Kirigami
 
 import "code/util.js" as Util
+import "gradientpicker"
 import "code/gradients.js" as Gradients
 
 PlasmoidItem {
     id: root
 
+    // true while a window opened from the popup (gradient chooser) has the focus: keep the popup open
+    property bool popupBusy: false
+    hideOnWindowDeactivate: !popupBusy
+
     readonly property var cfg: Plasmoid.configuration
 
     // Timer definitions and gradients from the configuration
     readonly property var timers: Util.loadTimers(cfg.timers)
-    readonly property var gradients: Gradients.parse(cfg.gradientsCss || Gradients.defaultCss)
+    readonly property var gradients: GradientStore.gradients
 
     // Running timers: {uid, id, name, icon, duration, sound, repeat, gradient, end, remaining, paused, finished}
     property var running: Util.loadRunning(cfg.runningState)
@@ -255,7 +260,31 @@ PlasmoidItem {
         onRunningChanged: if (!running) root.blink = false
     }
 
+    // the gradients are user-wide (gradientpicker/GradientStore); cfg.gradientsCss is only the old per-widget
+    // list, read once to seed the user-wide one
+    // a gradient renamed in its editor keeps the timers that use it
+    Connections {
+        target: GradientStore
+        function onRenamed(oldName, newName) {
+            const list = Util.loadTimers(root.cfg.timers);
+            let changed = false;
+            list.forEach(t => {
+                if (t.gradient === oldName) {
+                    t.gradient = newName;
+                    changed = true;
+                }
+            });
+            if (changed)
+                Plasmoid.configuration.timers = JSON.stringify(list);
+            if (root.cfg.quickGradient === oldName)
+                Plasmoid.configuration.quickGradient = newName;
+            if (root.running.some(r => r.gradient === oldName))
+                root.mutate(l => l.forEach(r => { if (r.gradient === oldName) r.gradient = newName; }));
+        }
+    }
+
     Component.onCompleted: {
+        GradientStore.adopt(cfg.gradientsCss);
         now = Date.now();
         // Timers that expired while plasmashell was not running finish silently
         if (running.some(r => !r.paused && !r.finished && r.end <= now))

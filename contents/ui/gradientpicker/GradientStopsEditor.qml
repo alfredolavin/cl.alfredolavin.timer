@@ -113,11 +113,9 @@ Item {
             radius: 4
             cell: 6
         }
-        GradientBar {
+        GradientStrip {
             anchors.fill: parent
             stops: ed.compiled
-            progress: 1
-            trackColor: "transparent"
             radius: 4
         }
         Rectangle {

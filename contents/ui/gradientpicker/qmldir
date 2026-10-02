@@ -1,0 +1,11 @@
+module gradientpicker
+singleton GradientStore 1.0 GradientStore.qml
+GradientStrip 1.0 GradientStrip.qml
+GradientSwatch 1.0 GradientSwatch.qml
+GradientPicker 1.0 GradientPicker.qml
+GradientPickerWindow 1.0 GradientPickerWindow.qml
+GradientChooserButton 1.0 GradientChooserButton.qml
+GradientEditor 1.0 GradientEditor.qml
+GradientEditorWindow 1.0 GradientEditorWindow.qml
+GradientStopsEditor 1.0 GradientStopsEditor.qml
+Checkerboard 1.0 Checkerboard.qml

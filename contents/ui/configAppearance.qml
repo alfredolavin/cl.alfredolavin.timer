@@ -4,15 +4,15 @@ import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 import org.kde.kcmutils as KCM
 
+import "gradientpicker"
 import "code/gradients.js" as Gradients
 import "code/colorspec.js" as ColorSpec
 
 KCM.SimpleKCM {
     id: page
 
-    property string cfg_gradientsCss
     property string cfg_runningState
-    readonly property var gradients: Gradients.parse(cfg_gradientsCss || Gradients.defaultCss)
+    readonly property var gradients: GradientStore.gradients
 
     // Frame background and outline; while empty they are derived from the older settings below
     property string cfg_frameBackgroundColor

@@ -5,17 +5,17 @@ import org.kde.kirigami as Kirigami
 import org.kde.kcmutils as KCM
 
 import "code/util.js" as Util
+import "gradientpicker"
 import "code/gradients.js" as Gradients
 
 KCM.SimpleKCM {
     id: page
 
     property string cfg_timers
-    property string cfg_gradientsCss
     property string cfg_quickGradient
     property string cfg_quickIcon
 
-    readonly property var gradients: Gradients.parse(cfg_gradientsCss || Gradients.defaultCss)
+    readonly property var gradients: GradientStore.gradients
     readonly property int idx: list.currentIndex
     property bool loading: false
     property string currentIcon
@@ -56,7 +56,7 @@ KCM.SimpleKCM {
             seconds.value = t.duration % 60;
             soundCombo.currentIndex = t.sound;
             repeatSpin.value = t.repeat;
-            gradientCombo.currentIndex = Math.max(0, gradients.findIndex(g => g.name === t.gradient));
+            gradientCombo.selected = t.gradient;
         }
         loading = false;
     }
@@ -259,40 +259,18 @@ KCM.SimpleKCM {
                 text: i18n("Gradient of quick timers and alarms:")
                 elide: Text.ElideRight
             }
-            QQC2.ComboBox {
+            GradientChooserButton {
                 id: quickGradientCombo
                 Layout.fillWidth: true
-                model: page.gradients
-                textRole: "name"
-                currentIndex: Math.max(0, page.gradients.findIndex(g => g.name === page.cfg_quickGradient))
-                onActivated: index => page.cfg_quickGradient = page.gradients[index].name
-                delegate: QQC2.ItemDelegate {
-                    required property var modelData
-                    required property int index
-                    width: quickGradientCombo.popup.width
-                    highlighted: quickGradientCombo.highlightedIndex === index
-                    contentItem: RowLayout {
-                        QQC2.Label {
-                            text: modelData.name
-                            Layout.preferredWidth: Kirigami.Units.gridUnit * 7
-                            elide: Text.ElideRight
-                        }
-                        GradientBar {
-                            Layout.fillWidth: true
-                            Layout.preferredHeight: Kirigami.Units.gridUnit * 0.8
-                            stops: modelData.stops
-                            progress: 1
-                            radius: 4
-                        }
-                    }
-                }
+                selected: page.cfg_quickGradient
+                onPicked: name => page.cfg_quickGradient = name
             }
             GradientBar {
                 Layout.fillWidth: true
                 Layout.preferredHeight: Kirigami.Units.gridUnit * 0.6
                 radius: 3
                 progress: 1
-                stops: page.gradients.length ? page.gradients[Math.max(0, quickGradientCombo.currentIndex)].stops : []
+                stops: GradientStore.find(page.cfg_quickGradient).stops
             }
 
             // icon of the one-off timers and alarms started from the popup's quick entry; empty = automatic
@@ -461,40 +439,18 @@ KCM.SimpleKCM {
                 onValueModified: page.setRole("repeat", value)
             }
 
-            QQC2.ComboBox {
+            GradientChooserButton {
                 id: gradientCombo
                 Kirigami.FormData.label: i18n("Gradient:")
                 Layout.preferredWidth: Kirigami.Units.gridUnit * 14
-                model: page.gradients
-                textRole: "name"
-                onActivated: index => page.setRole("gradient", page.gradients[index].name)
-                delegate: QQC2.ItemDelegate {
-                    required property var modelData
-                    required property int index
-                    width: gradientCombo.popup.width
-                    highlighted: gradientCombo.highlightedIndex === index
-                    contentItem: RowLayout {
-                        QQC2.Label {
-                            text: modelData.name
-                            Layout.preferredWidth: Kirigami.Units.gridUnit * 7
-                            elide: Text.ElideRight
-                        }
-                        GradientBar {
-                            Layout.fillWidth: true
-                            Layout.preferredHeight: Kirigami.Units.gridUnit * 0.8
-                            stops: modelData.stops
-                            progress: 1
-                            radius: 4
-                        }
-                    }
-                }
+                onPicked: name => page.setRole("gradient", name)
             }
 
             GradientBar {
                 Kirigami.FormData.label: i18n("Preview:")
                 Layout.preferredWidth: Kirigami.Units.gridUnit * 14
                 Layout.preferredHeight: Kirigami.Units.gridUnit * 1.4
-                stops: page.gradients.length ? page.gradients[Math.max(0, gradientCombo.currentIndex)].stops : []
+                stops: GradientStore.find(gradientCombo.selected).stops
                 progress: 0.65
                 radius: 5
                 text: kindCombo.currentIndex === 1 ? Util.formatClock(alarmHour.value * 60 + alarmMinute.value)
