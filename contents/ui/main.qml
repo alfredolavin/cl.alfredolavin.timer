@@ -13,9 +13,9 @@ PlasmoidItem {
 
     // true while a window opened from the popup (gradient chooser) has the focus: keep the popup open
     property bool popupBusy: false
-    hideOnWindowDeactivate: !popupBusy
-
     readonly property var cfg: Plasmoid.configuration
+    // the pin button in the popup header keeps the popup open
+    hideOnWindowDeactivate: !cfg.pinned && !popupBusy
 
     // Timer definitions and gradients from the configuration
     readonly property var timers: Util.loadTimers(cfg.timers)

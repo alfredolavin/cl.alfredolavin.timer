@@ -94,5 +94,7 @@
         <entry name="savedPanelVisibility" type="Int"><default>-1</default></entry>
         <!-- JSON array of running timers, survives restarts -->
         <entry name="runningState" type="String"><default>[]</default></entry>
+        <!-- pin button of the popup: it stays open when another window is activated and after starting a timer -->
+        <entry name="pinned" type="Bool"><default>false</default></entry>
     </group>
 </kcfg>

@@ -59,6 +59,16 @@ PlasmaExtras.Representation {
                     text: i18n("Start a timer")
                 }
                 PlasmaComponents.ToolButton {
+                    checkable: true
+                    checked: full.cfg.pinned
+                    icon.name: "window-pin"
+                    display: PlasmaComponents.AbstractButton.IconOnly
+                    text: i18n("Keep open")
+                    PlasmaComponents.ToolTip.text: text
+                    PlasmaComponents.ToolTip.visible: hovered
+                    onToggled: full.cfg.pinned = checked
+                }
+                PlasmaComponents.ToolButton {
                     icon.name: "configure"
                     display: PlasmaComponents.AbstractButton.IconOnly
                     text: i18n("Configure timers…")
@@ -93,7 +103,8 @@ PlasmaExtras.Representation {
                 function launch() {
                     if (!parsed)
                         return;
-                    full.app.expanded = false;
+                    if (!full.cfg.pinned)
+                        full.app.expanded = false;
                     full.app.startQuick(Object.assign({}, parsed, { gradient: quickRow.gradient, icon: quickRow.icon }));
                     quickField.clear();
                 }
@@ -230,7 +241,8 @@ PlasmaExtras.Representation {
                     required property var modelData
                     width: ListView.view.width
                     onClicked: {
-                        full.app.expanded = false;
+                        if (!full.cfg.pinned)
+                            full.app.expanded = false;
                         full.app.start(modelData.id);
                     }
                     contentItem: RowLayout {
