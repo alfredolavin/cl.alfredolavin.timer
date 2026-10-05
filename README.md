@@ -5,7 +5,9 @@ contrast-aware time, and bordered play/pause, delete, "other running timers" (â†
 
 Besides timers (a duration) there are alarms (a time of day: they count down from when they are started to
 the next time the clock shows that time). The bottom of the popup starts a one-off timer or alarm
-immediately: `2` (hours), `+1h30`, `90s` for timers; prefix `-` for an alarm: `-14:30`, `-7pm`, `-2` (2:00). Bare numbers are hours.
+immediately: `2` (hours), `+1h30`, `90s` for timers; prefix `-` for an alarm: `-14:30`, `-7pm`, `-3.5` (3:30: the dot is a decimal fraction of an hour), `-3,5` (3:05: the
+comma gives the minutes), `-3,53` (3:53). Without am/pm, an hour from 1 to 11 is read in the 12-hour clock with the current
+am/pm: past noon, `-3.5` is 15:30. Bare numbers are hours.
 
 ## Install / update
 

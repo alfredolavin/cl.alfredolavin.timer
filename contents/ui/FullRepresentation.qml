@@ -101,18 +101,20 @@ PlasmaExtras.Representation {
                 property string icon: full.cfg.quickIcon
 
                 function launch() {
-                    if (!parsed)
+                    // parsed again: an alarm hour without am/pm depends on the time it is now
+                    const q = Util.parseQuick(quickField.text);
+                    if (!q)
                         return;
                     if (!full.cfg.pinned)
                         full.app.expanded = false;
-                    full.app.startQuick(Object.assign({}, parsed, { gradient: quickRow.gradient, icon: quickRow.icon }));
+                    full.app.startQuick(Object.assign({}, q, { gradient: quickRow.gradient, icon: quickRow.icon }));
                     quickField.clear();
                 }
 
                 PlasmaComponents.TextField {
                     id: quickField
                     Layout.fillWidth: true
-                    placeholderText: i18n("Quick timer or alarm: 2 (hours), 1h30, 90s, -14:30, -7pm…")
+                    placeholderText: i18n("Quick timer or alarm: 2 (hours), 1h30, 90s, -14:30, -3.5 (3:30), -3,5 (3:05), -7pm…")
                     color: text.length && !quickRow.parsed ? Kirigami.Theme.negativeTextColor : Kirigami.Theme.textColor
                     onAccepted: quickRow.launch()
                 }

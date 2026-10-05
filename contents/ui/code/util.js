@@ -62,9 +62,12 @@ function nextOccurrence(at, nowMs) {
 
 // Quick entry. A "+" prefix (or none) makes a timer, a "-" prefix makes an alarm. A bare number is hours.
 // Timer: "2" (2h), "2:30", "1,5" (1.5h), "1h30", "90s", "5m", "1h 30m 10s", "0.45" (0h45).
-// Alarm (time of day): "-2" (2:00), "-14:30", "-7pm", "-7:30 am", "-8.50" (8:50).
-// Returns null when not understood.
-function parseQuick(text) {
+// Alarm (time of day): "-14:30", "-7pm", "-7:30 am", and without am/pm:
+//   "-3.5" decimal hours (the dot): 3:30; "-3.25" 3:15; "-3,5" the comma gives minutes: 3:05; "-3,53" 3:53; "-3:30" 3:30.
+//   An hour from 1 to 11 without am/pm is taken in the 12-hour clock with the current am/pm: at 15:00, "-3.5" is 15:30
+//   (12 and up, and 0, are literal).
+// Returns null when not understood. `nowMs` (default: now) tells am from pm.
+function parseQuick(text, nowMs) {
     var s = (text || "").toLowerCase().replace(/\s+/g, "");
     var alarm = false;
     if (s[0] === "+" || s[0] === "-") {
@@ -82,11 +85,19 @@ function parseQuick(text) {
                 return null;
             return { kind: "alarm", at: (h12 % 12 + (m[3] === "p" ? 12 : 0)) * 60 + m12 };
         }
-        // "8", "14:30", "8." or "8.50": a clock time (the dot works like a colon)
-        m = s.match(/^(\d{1,2})(?:[:.](\d{0,2}))?$/);
+        // "8", "14:30", "8.5" (decimal hours: 8:30), "8,5" (minutes: 8:05): a clock time
+        m = s.match(/^(\d{1,2})(?:([:.,])(\d*))?$/);
         if (!m)
             return null;
-        var h = parseInt(m[1], 10), min = m[2] ? parseInt(m[2].padEnd(2, "0"), 10) : 0;
+        var h = parseInt(m[1], 10), f = m[3] || "", min = 0;
+        if (f && m[2] === ".")
+            min = Math.round(parseFloat("0." + f) * 60);
+        else if (f && f.length <= 2)
+            min = m[2] === "," ? parseInt(f, 10) : parseInt(f.padEnd(2, "0"), 10);
+        else if (f)
+            return null;
+        if (h >= 1 && h < 12 && new Date(nowMs === undefined ? Date.now() : nowMs).getHours() >= 12)
+            h += 12;
         return h < 24 && min < 60 ? { kind: "alarm", at: h * 60 + min } : null;
     }
     var sec = -1;
