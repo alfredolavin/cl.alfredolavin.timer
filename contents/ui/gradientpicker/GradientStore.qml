@@ -147,9 +147,20 @@ QtObject {
 
     // ---- file ----
     // (XMLHttpRequest may not read local files unless QML_XHR_ALLOW_FILE_READ is set, so `cat` it)
+    // The executable engine remembers every source name it has ever been given (in a QQmlPropertyMap that never
+    // shrinks, and gets slower with each key), so a fresh name per read, e.g. a timestamp, slowly pins plasmashell
+    // at 100% CPU. Reusing a small ring of names is safe: a finished source is re-run when connected again.
+    readonly property int readSlots: 4
     property int serial: 0
     function read() {
-        runner.connectSource("cat '" + path + "' 2>/dev/null #r" + Date.now() + "-" + (++serial));
+        const cmd = "cat '" + path + "' 2>/dev/null #r";
+        for (let i = 0; i < readSlots; i++) {
+            const source = cmd + (serial++ % readSlots);
+            if (runner.connectedSources.indexOf(source) < 0) {   // skip one still running
+                runner.connectSource(source);
+                return;
+            }
+        }
     }
 
     function received(text) {

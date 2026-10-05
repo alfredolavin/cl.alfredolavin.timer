@@ -16,6 +16,9 @@ Item {
     // size of one square in px
     property int tileSize: 28
     property int spacing: 6
+    // empty border around the grid, so the swatch shadows (GradientSwatch.room = 7 px at the default blur), the
+    // hover zoom (1.08) and the selection ring fit inside the picker's size and a clipping parent doesn't cut them
+    property int padding: Math.ceil(7 * 1.08 + tileSize * 0.04)
     // clicking a square picks it; off for plain management
     property bool selectable: true
     // show the "+" tile and the editing entries of the context menu
@@ -30,8 +33,8 @@ Item {
 
     signal picked(string name)
 
-    implicitWidth: flow.implicitWidth
-    implicitHeight: flow.implicitHeight
+    implicitWidth: flow.implicitWidth + 2 * padding
+    implicitHeight: flow.implicitHeight + 2 * padding
 
     property string menuTarget: ""
 
@@ -48,7 +51,9 @@ Item {
 
     Flow {
         id: flow
-        width: parent.width
+        x: picker.padding
+        y: picker.padding
+        width: parent.width - 2 * picker.padding
         spacing: picker.spacing
 
         // "none" tile

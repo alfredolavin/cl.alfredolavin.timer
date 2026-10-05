@@ -25,7 +25,6 @@ KCM.SimpleKCM {
 
         GradientPicker {
             Layout.fillWidth: true
-            Layout.margins: 4
             tileSize: 36
             selectable: false
         }

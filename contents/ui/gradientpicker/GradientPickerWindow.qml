@@ -42,7 +42,6 @@ Window {
         GradientPicker {
             id: grid
             width: parent.width
-            // room for the swatch shadows at the edges
             selected: win.selected
             tileSize: win.tileSize
             emptyLabel: win.emptyLabel
