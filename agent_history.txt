@@ -2,3 +2,4 @@
 
 2026-09-29: Port the "System" color source (Plasma theme colors, with luminosity/chroma/opacity adjustments), first built for cl.alfredolavin.turbotodo, back into this timer plasmoid: shared colorspec.js, a SystemTheme helper, the color selector's new source and combo box, and every place that resolves a configurable color (frame, bar shadows, previews).
 2026-10-07: Apply QML configuration paradigm: add About page with dedicated quote, ConfigFooter with alfredolavin@gmail.com mailto link to all pages, and 20x20 full color PropertyIcon to every configuration property.
+2026-10-07: Fix property icon overlap and duplicates: remove duplicate icons from controls with built-in previews, ensure leftPadding: 28 on controls with internal icons, support Nerd Font glyphs, and use directly related icons across all configuration pages.

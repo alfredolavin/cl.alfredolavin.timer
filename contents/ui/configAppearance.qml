@@ -60,6 +60,7 @@ KCM.SimpleKCM {
             readonly property var layouts: ["frame", "bar"]
             Kirigami.FormData.label: i18n("Layout:")
             PropertyIcon { source: "view-grid" }
+            leftPadding: 28
             model: [i18n("Frame holding the icon, bar and buttons"), i18n("The bar is the widget, holding the icon and buttons")]
             currentIndex: Math.max(0, layouts.indexOf(page.cfg_panelLayout))
             onActivated: index => page.cfg_panelLayout = layouts[index]
@@ -75,11 +76,9 @@ KCM.SimpleKCM {
         Kirigami.Separator { Kirigami.FormData.isSection: true; Kirigami.FormData.label: i18n("Frame") }
 
         QQC2.SpinBox { id: cornerRadius; Kirigami.FormData.label: i18n("Corner radius:"); from: 0; to: 30 }
-        PropertyIcon { source: "draw-circle" }
         ColorSpecButton {
             id: frameBackground
             Kirigami.FormData.label: i18n("Background:")
-            PropertyIcon { source: "preferences-desktop-color" }
             dialogTitle: i18n("Widget background color")
             gradients: page.gradients
             runningState: page.cfg_runningState
@@ -89,7 +88,6 @@ KCM.SimpleKCM {
         ColorSpecButton {
             id: frameOutline
             Kirigami.FormData.label: i18n("Outline:")
-            PropertyIcon { source: "format-stroke-color" }
             dialogTitle: i18n("Widget outline color (frame and buttons)")
             gradients: page.gradients
             runningState: page.cfg_runningState
@@ -98,18 +96,13 @@ KCM.SimpleKCM {
             QQC2.ToolTip.text: i18n("Also the border of the buttons. Click to change")
         }
         QQC2.SpinBox { id: borderWidth; Kirigami.FormData.label: i18n("Outline width:"); from: 0; to: 10 }
-        PropertyIcon { source: "transform-scale-horizontal" }
         QQC2.SpinBox { id: padding; Kirigami.FormData.label: i18n("Inner padding:"); from: 0; to: 20 }
-        PropertyIcon { source: "border-outer" }
         QQC2.SpinBox { id: spacing; Kirigami.FormData.label: i18n("Spacing:"); from: 0; to: 20 }
-        PropertyIcon { source: "distribute-horizontal-margin" }
 
         Kirigami.Separator { Kirigami.FormData.isSection: true; Kirigami.FormData.label: i18n("Icon") }
 
         QQC2.SpinBox { id: iconSize; Kirigami.FormData.label: i18n("Icon size:"); from: 8; to: 128 }
-        PropertyIcon { source: "format-text-bold" }
         QQC2.CheckBox { id: autoIconColor; Kirigami.FormData.label: i18n("Icon color:"); text: i18n("Automatic (best contrast)") }
-        PropertyIcon { source: "preferences-desktop-color" }
         ColorSpecButton {
             id: iconColor
             enabled: !autoIconColor.checked
@@ -141,17 +134,15 @@ KCM.SimpleKCM {
         }
         RowLayout {
             Kirigami.FormData.label: i18n("Bar height:")
-            PropertyIcon { source: "transform-scale" }
+            PropertyIcon { source: "zoom-fit-height" }
             QQC2.Slider { id: barHeight; from: 30; to: 100; stepSize: 1; Kirigami.StyleHints.tickMarkStepSize: -1; Layout.preferredWidth: Kirigami.Units.gridUnit * 10 }
             QQC2.Label { text: i18n("%1 % of the height", barHeight.value) }
         }
         QQC2.SpinBox { id: barRadius; Kirigami.FormData.label: i18n("Bar corner radius:"); from: 0; to: 30 }
-        PropertyIcon { source: "draw-circle" }
         QQC2.CheckBox { id: textShadow; text: i18n("Contrasting shadow behind the time") }
         ColorSpecButton {
             id: finishedTextColor
             Kirigami.FormData.label: i18n("Time's up text color:")
-            PropertyIcon { source: "preferences-desktop-color" }
             dialogTitle: i18n("Color of the text shown over the bar when a timer ends")
             gradients: page.gradients
             runningState: page.cfg_runningState
@@ -160,11 +151,8 @@ KCM.SimpleKCM {
         Kirigami.Separator { Kirigami.FormData.isSection: true; Kirigami.FormData.label: i18n("Buttons") }
 
         QQC2.SpinBox { id: buttonIconSize; Kirigami.FormData.label: i18n("Button icon size:"); from: 8; to: 128 }
-        PropertyIcon { source: "format-text-bold" }
         QQC2.SpinBox { id: buttonBorderWidth; Kirigami.FormData.label: i18n("Button border width:"); from: 0; to: 6 }
-        PropertyIcon { source: "transform-scale-horizontal" }
         QQC2.SpinBox { id: buttonRadius; Kirigami.FormData.label: i18n("Button corner radius:"); from: 0; to: 30 }
-        PropertyIcon { source: "draw-circle" }
     }
 
     footer: ConfigFooter {}

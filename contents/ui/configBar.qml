@@ -245,7 +245,6 @@ KCM.SimpleKCM {
             ColorSpecButton {
                 id: trackColor
                 Kirigami.FormData.label: i18n("Background color:")
-                PropertyIcon { source: "preferences-desktop-color" }
                 dialogTitle: i18n("Progress bar background color")
                 gradients: page.gradients
                 runningState: page.cfg_runningState
@@ -253,13 +252,11 @@ KCM.SimpleKCM {
             ColorSpecButton {
                 id: barBorderColor
                 Kirigami.FormData.label: i18n("Border color:")
-                PropertyIcon { source: "preferences-desktop-color" }
                 dialogTitle: i18n("Progress bar border color")
                 gradients: page.gradients
                 runningState: page.cfg_runningState
             }
             QQC2.SpinBox { id: barBorderWidth; Kirigami.FormData.label: i18n("Border width:"); from: 0; to: 8 }
-            PropertyIcon { source: "transform-scale-horizontal" }
 
             Kirigami.Separator { Kirigami.FormData.isSection: true; Kirigami.FormData.label: i18n("Text (name, time and messages)") }
 
@@ -274,9 +271,7 @@ KCM.SimpleKCM {
                 QQC2.ToolTip.delay: Kirigami.Units.toolTipDelay
             }
             FontSizeSpin { id: nameFontSize; Kirigami.FormData.label: i18n("Name size:") }
-            PropertyIcon { source: "format-text-bold" }
             FontSizeSpin { id: timeFontSize; Kirigami.FormData.label: i18n("Time size:") }
-            PropertyIcon { source: "format-text-bold" }
             RowLayout {
                 Kirigami.FormData.label: i18n("Font weight:")
                 PropertyIcon { source: "format-text-bold" }
@@ -286,7 +281,6 @@ KCM.SimpleKCM {
             ColorSpecButton {
                 id: textColorButton
                 Kirigami.FormData.label: i18n("Text color:")
-                PropertyIcon { source: "preferences-desktop-color" }
                 dialogTitle: i18n("Text color inside the bar")
                 gradients: page.gradients
                 runningState: page.cfg_runningState
@@ -294,7 +288,6 @@ KCM.SimpleKCM {
             ColorSpecButton {
                 id: outlineColorButton
                 Kirigami.FormData.label: i18n("Outline color:")
-                PropertyIcon { source: "preferences-desktop-color" }
                 dialogTitle: i18n("Text outline color")
                 gradients: page.gradients
                 runningState: page.cfg_runningState
@@ -303,6 +296,7 @@ KCM.SimpleKCM {
                 id: outlineWidthSpin
                 Kirigami.FormData.label: i18n("Outline width:")
                 PropertyIcon { source: "transform-scale-horizontal" }
+                leftPadding: 28
                 from: 0
                 to: 3
                 textFromValue: v => v === 0 ? i18n("None") : i18n("%1 px", v)
@@ -312,11 +306,9 @@ KCM.SimpleKCM {
             Kirigami.Separator { Kirigami.FormData.isSection: true; Kirigami.FormData.label: i18n("Glow") }
 
             QQC2.CheckBox { id: glowEnabled; Kirigami.FormData.label: i18n("Glow:"); text: i18n("Glow around the filled part") }
-            PropertyIcon { source: "format-text-effect" }
             ColorSpecButton {
                 id: glowColor
                 Kirigami.FormData.label: i18n("Color:")
-                PropertyIcon { source: "preferences-desktop-color" }
                 enabled: glowEnabled.checked
                 dialogTitle: i18n("Glow color")
                 gradients: page.gradients
@@ -333,7 +325,7 @@ KCM.SimpleKCM {
             }
             RowLayout {
                 Kirigami.FormData.label: i18n("Opacity:")
-                PropertyIcon { source: "configure" }
+                PropertyIcon { source: "edit-opacity" }
                 enabled: glowEnabled.checked
                 QQC2.Slider { id: glowOpacity; from: 0; to: 100; stepSize: 1; Layout.preferredWidth: Kirigami.Units.gridUnit * 10 }
                 QQC2.Label { text: glowOpacity.value + " %" }
@@ -342,6 +334,7 @@ KCM.SimpleKCM {
                 id: glowStrength
                 Kirigami.FormData.label: i18n("Strength:")
                 PropertyIcon { source: "configure" }
+                leftPadding: 28
                 enabled: glowEnabled.checked
                 from: 1
                 to: 5
@@ -387,7 +380,6 @@ KCM.SimpleKCM {
             ColorSpecButton {
                 id: markerColor
                 Kirigami.FormData.label: i18n("Color:")
-                PropertyIcon { source: "preferences-desktop-color" }
                 enabled: markerLine.checked || markerCircle.checked
                 dialogTitle: i18n("Progress marker color")
                 gradients: page.gradients
