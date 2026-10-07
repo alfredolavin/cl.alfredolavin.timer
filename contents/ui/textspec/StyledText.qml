@@ -21,8 +21,8 @@ Item {
 
     // Direct property aliases and overrides
     property string text: ""
-    property int horizontalAlignment: Text.AlignLeft
-    property int verticalAlignment: Text.AlignVCenter
+    property int horizontalAlignment: activeSpec.justified ? Text.AlignJustify : (activeSpec.horizontalAlignment !== undefined ? activeSpec.horizontalAlignment : Text.AlignLeft)
+    property int verticalAlignment: activeSpec.verticalAlignment !== undefined ? activeSpec.verticalAlignment : Text.AlignVCenter
     property int elide: Text.ElideNone
     property int wrapMode: Text.NoWrap
 
@@ -101,7 +101,7 @@ Item {
                 blurEnabled: true
                 blur: Math.min(1.0, root.activeSpec.glowRadius / 16.0)
                 blurMax: 32
-                saturation: 1.5
+                saturation: 1.5 * (root.activeSpec.glowStrength || 1.0)
             }
 
             Text {
@@ -115,6 +115,38 @@ Item {
                 verticalAlignment: mainText.verticalAlignment
                 elide: mainText.elide
                 wrapMode: mainText.wrapMode
+            }
+        }
+
+        // Multiple shadows layer (drawn behind outline and main text)
+        Repeater {
+            model: (root.activeSpec.shadows && root.activeSpec.shadows.length > 0) ? root.activeSpec.shadows.filter(s => s.enabled) : []
+            Item {
+                id: shadowItem
+                required property var modelData
+                anchors.fill: parent
+
+                layer.enabled: true
+                layer.effect: MultiEffect {
+                    blurEnabled: (modelData.blur || 0) > 0
+                    blur: Math.min(1.0, (modelData.blur || 0) / 16.0)
+                    blurMax: 32
+                }
+
+                Text {
+                    anchors.centerIn: parent
+                    anchors.horizontalCenterOffset: modelData.x || 0
+                    anchors.verticalCenterOffset: modelData.y || 0
+                    width: mainText.width
+                    height: mainText.height
+                    text: root.text
+                    color: modelData.color || "#80000000"
+                    font: mainText.font
+                    horizontalAlignment: mainText.horizontalAlignment
+                    verticalAlignment: mainText.verticalAlignment
+                    elide: mainText.elide
+                    wrapMode: mainText.wrapMode
+                }
             }
         }
 
@@ -151,7 +183,7 @@ Item {
             }
         }
 
-        // Main text layer (with optional drop shadow via MultiEffect)
+        // Main text layer (solid text fill when textMode !== "gradient")
         Text {
             id: mainText
             anchors.centerIn: parent
@@ -162,21 +194,78 @@ Item {
             verticalAlignment: root.verticalAlignment
             elide: root.elide
             wrapMode: root.wrapMode
+            visible: root.activeSpec.textMode !== "gradient"
 
             font.family: root.activeSpec.fontFamily || ""
+            font.styleName: ""
             font.weight: root.activeSpec.weight
             font.pixelSize: root.activeSpec.pixelSize
             font.italic: root.activeSpec.italic
             font.letterSpacing: root.activeSpec.letterSpacing
+        }
 
-            layer.enabled: root.activeSpec.shadowEnabled
+        // Dedicated text mask for gradient fill (pure clean glyph shapes, no effects, layer enabled)
+        Text {
+            id: textMask
+            anchors.fill: mainText
+            text: root.text
+            color: "#ffffff"
+            horizontalAlignment: mainText.horizontalAlignment
+            verticalAlignment: mainText.verticalAlignment
+            elide: mainText.elide
+            wrapMode: mainText.wrapMode
+            font: mainText.font
+            visible: false
+            layer.enabled: true
+        }
+
+        // Text gradient fill item (masked onto textMask shape)
+        Item {
+            id: textGradItem
+            anchors.fill: mainText
+            visible: root.activeSpec.textMode === "gradient"
+
+            readonly property var gradDef: GradientStore.find(root.activeSpec.textGradient)
+            readonly property var stops: gradDef ? gradDef.stops : []
+
+            Canvas {
+                id: textGradCanvas
+                anchors.fill: parent
+                renderStrategy: Canvas.Immediate
+                onPaint: {
+                    const ctx = getContext("2d");
+                    ctx.reset();
+                    const w = width, h = height;
+                    if (w <= 0 || h <= 0) return;
+                    const stops = textGradItem.stops;
+                    if (stops && stops.length) {
+                        const g = ctx.createLinearGradient(0, 0, w, 0);
+                        stops.forEach(s => g.addColorStop(Math.max(0, Math.min(1, s.pos)), s.css));
+                        ctx.fillStyle = g;
+                    } else {
+                        ctx.fillStyle = root.activeSpec.textColor || "#ffffffff";
+                    }
+                    ctx.fillRect(0, 0, w, h);
+                }
+                Connections {
+                    target: root
+                    function onWidthChanged() { textGradCanvas.requestPaint(); }
+                    function onHeightChanged() { textGradCanvas.requestPaint(); }
+                    function onSpecChanged() { textGradCanvas.requestPaint(); }
+                    function onSpecStringChanged() { textGradCanvas.requestPaint(); }
+                }
+                Connections {
+                    target: textGradItem
+                    function onStopsChanged() { textGradCanvas.requestPaint(); }
+                    function onVisibleChanged() { if (textGradItem.visible) textGradCanvas.requestPaint(); }
+                }
+                Component.onCompleted: requestPaint()
+            }
+
+            layer.enabled: true
             layer.effect: MultiEffect {
-                shadowEnabled: root.activeSpec.shadowEnabled
-                shadowColor: root.activeSpec.shadowColor
-                shadowBlur: Math.min(1.0, root.activeSpec.shadowBlur / 16.0)
-                shadowHorizontalOffset: root.activeSpec.shadowX
-                shadowVerticalOffset: root.activeSpec.shadowY
-                blurMax: 32
+                maskEnabled: true
+                maskSource: textMask
             }
         }
     }

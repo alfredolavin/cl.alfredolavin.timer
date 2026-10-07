@@ -185,11 +185,34 @@ Window {
                 Kirigami.FormLayout {
                     Layout.fillWidth: true
 
+                    QQC2.ComboBox {
+                        Kirigami.FormData.label: i18n("Text fill mode:")
+                        Layout.fillWidth: true
+                        model: [i18n("Solid Color"), i18n("Gradient")]
+                        currentIndex: win.currentSpec.textMode === "gradient" ? 1 : 0
+                        onActivated: index => {
+                            var newMode = index === 1 ? "gradient" : "color";
+                            if (newMode === "gradient" && (!win.currentSpec.textGradient || win.currentSpec.textGradient.length === 0)) {
+                                var names = GradientStore.names();
+                                if (names && names.length > 0) win.setSpecProperty("textGradient", names[0]);
+                            }
+                            win.setSpecProperty("textMode", newMode);
+                        }
+                    }
+
                     ColorSpecButton {
+                        visible: win.currentSpec.textMode !== "gradient"
                         Kirigami.FormData.label: i18n("Text color:")
                         value: win.currentSpec.textColor
                         dialogTitle: i18n("Choose Text Color")
                         onEdited: val => win.setSpecProperty("textColor", val)
+                    }
+
+                    GradientChooserButton {
+                        visible: win.currentSpec.textMode === "gradient"
+                        Kirigami.FormData.label: i18n("Text gradient:")
+                        selected: win.currentSpec.textGradient
+                        onPicked: name => win.setSpecProperty("textGradient", name)
                     }
 
                     QQC2.ComboBox {

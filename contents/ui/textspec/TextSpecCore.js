@@ -37,30 +37,92 @@ function defaultSpec() {
         italic: false,
         letterSpacing: 0,
         textColor: "#ffffffff",
+        textMode: "color",        // "color" | "gradient"
+        textGradient: "",
         outlineEnabled: false,
         outlineWidth: 1,
         outlineColor: "#ff000000",
         glowEnabled: false,
         glowColor: "#ffffaa00",
         glowRadius: 6,
+        glowStrength: 1.0,
         shadowEnabled: false,
         shadowColor: "#80000000",
         shadowBlur: 4,
         shadowX: 1,
         shadowY: 1,
+        shadows: [],
         bgMode: "none",        // "none" | "color" | "gradient"
         bgColor: "#40000000",
         bgGradient: "",
         bgRadius: 4,
-        bgPadding: 2
+        bgPadding: 2,
+        horizontalAlignment: 1, // Text.AlignLeft (1), Text.AlignRight (2), Text.AlignHCenter (4), Text.AlignJustify (8)
+        verticalAlignment: 128,  // Text.AlignVCenter (128), Text.AlignTop (32), Text.AlignBottom (64)
+        justified: false
     };
 }
+
+function normalizeShadow(s) {
+    if (!s || typeof s !== "object") s = {};
+    function n(v, d) { v = parseFloat(v); return isNaN(v) ? d : v; }
+    return {
+        enabled: s.enabled !== false,
+        x: n(s.x, 0),
+        y: n(s.y, 2),
+        blur: Math.max(0, n(s.blur, 4)),
+        spread: n(s.spread, 0),
+        color: typeof s.color === "string" && s.color.length ? s.color : "#80000000",
+        inset: !!s.inset
+    };
+}
+
+function parseShadows(data) {
+    if (Array.isArray(data)) {
+        return data.map(normalizeShadow);
+    }
+    if (typeof data === "string" && data.trim().length > 0) {
+        try {
+            var a = JSON.parse(data);
+            if (Array.isArray(a)) return a.map(normalizeShadow);
+        } catch (e) {}
+    }
+    return [];
+}
+
+var shadowPresets = [
+    { name: "Soft drop", shadows: [{ enabled: true, x: 0, y: 2, blur: 4, spread: 0, color: "#80000000", inset: false }] },
+    { name: "Long soft", shadows: [{ enabled: true, x: 0, y: 4, blur: 12, spread: -1, color: "#66000000", inset: false }] },
+    { name: "Hard edge", shadows: [{ enabled: true, x: 2, y: 2, blur: 0, spread: 0, color: "#cc000000", inset: false }] },
+    { name: "Inner depth", shadows: [{ enabled: true, x: 0, y: 2, blur: 3, spread: 0, color: "#99000000", inset: true }] },
+    { name: "Top highlight", shadows: [{ enabled: true, x: 0, y: 1, blur: 1, spread: 0, color: "#80ffffff", inset: true }] },
+    { name: "Embossed", shadows: [{ enabled: true, x: 0, y: 1, blur: 2, spread: 0, color: "#80ffffff", inset: true },
+                                  { enabled: true, x: 0, y: -1, blur: 2, spread: 0, color: "#80000000", inset: true },
+                                  { enabled: true, x: 0, y: 1, blur: 2, spread: 0, color: "#66000000", inset: false }] },
+    { name: "Neon halo", shadows: [{ enabled: true, x: 0, y: 0, blur: 8, spread: 1, color: "#cc00e5ff", inset: false },
+                                  { enabled: true, x: 0, y: 0, blur: 3, spread: 0, color: "#ffffffff", inset: false }] }
+];
 
 function normalize(spec) {
     if (!spec || typeof spec !== "object") {
         spec = {};
     }
     var d = defaultSpec();
+    var shadowList = [];
+    if (spec.shadows !== undefined && ((Array.isArray(spec.shadows) && spec.shadows.length > 0) || (typeof spec.shadows === "string" && spec.shadows.trim().length > 2))) {
+        shadowList = parseShadows(spec.shadows);
+    } else if (spec.shadowEnabled) {
+        shadowList = [{
+            enabled: true,
+            x: parseFloat(spec.shadowX !== undefined ? spec.shadowX : 1) || 0,
+            y: parseFloat(spec.shadowY !== undefined ? spec.shadowY : 1) || 0,
+            blur: Math.max(0, parseInt(spec.shadowBlur !== undefined ? spec.shadowBlur : 4) || 4),
+            spread: 0,
+            color: String(spec.shadowColor || "#80000000"),
+            inset: false
+        }];
+    }
+
     return {
         fontFamily: String(spec.fontFamily !== undefined ? spec.fontFamily : d.fontFamily),
         weight: parseInt(spec.weight !== undefined ? spec.weight : d.weight) || 400,
@@ -68,22 +130,29 @@ function normalize(spec) {
         italic: !!spec.italic,
         letterSpacing: parseFloat(spec.letterSpacing !== undefined ? spec.letterSpacing : d.letterSpacing) || 0,
         textColor: String(spec.textColor || d.textColor),
+        textMode: spec.textMode === "gradient" ? "gradient" : "color",
+        textGradient: String(spec.textGradient !== undefined ? spec.textGradient : d.textGradient),
         outlineEnabled: !!spec.outlineEnabled,
         outlineWidth: Math.max(0, parseInt(spec.outlineWidth !== undefined ? spec.outlineWidth : d.outlineWidth) || 0),
         outlineColor: String(spec.outlineColor || d.outlineColor),
         glowEnabled: !!spec.glowEnabled,
         glowColor: String(spec.glowColor || d.glowColor),
         glowRadius: Math.max(1, parseInt(spec.glowRadius !== undefined ? spec.glowRadius : d.glowRadius) || 6),
+        glowStrength: parseFloat(spec.glowStrength !== undefined ? spec.glowStrength : d.glowStrength) || 1.0,
         shadowEnabled: !!spec.shadowEnabled,
         shadowColor: String(spec.shadowColor || d.shadowColor),
         shadowBlur: Math.max(0, parseInt(spec.shadowBlur !== undefined ? spec.shadowBlur : d.shadowBlur) || 4),
         shadowX: parseFloat(spec.shadowX !== undefined ? spec.shadowX : d.shadowX) || 0,
         shadowY: parseFloat(spec.shadowY !== undefined ? spec.shadowY : d.shadowY) || 0,
+        shadows: shadowList,
         bgMode: spec.bgMode === "color" || spec.bgMode === "gradient" ? spec.bgMode : "none",
         bgColor: String(spec.bgColor || d.bgColor),
         bgGradient: String(spec.bgGradient !== undefined ? spec.bgGradient : d.bgGradient),
         bgRadius: Math.max(0, parseInt(spec.bgRadius !== undefined ? spec.bgRadius : d.bgRadius) || 0),
-        bgPadding: Math.max(0, parseInt(spec.bgPadding !== undefined ? spec.bgPadding : d.bgPadding) || 0)
+        bgPadding: Math.max(0, parseInt(spec.bgPadding !== undefined ? spec.bgPadding : d.bgPadding) || 0),
+        horizontalAlignment: parseInt(spec.horizontalAlignment !== undefined ? spec.horizontalAlignment : d.horizontalAlignment) || 1,
+        verticalAlignment: parseInt(spec.verticalAlignment !== undefined ? spec.verticalAlignment : d.verticalAlignment) || 128,
+        justified: !!spec.justified
     };
 }
 
