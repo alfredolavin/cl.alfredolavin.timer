@@ -22,4 +22,10 @@ ConfigModel {
         icon: "color-gradient"
         source: "configGradients.qml"
     }
+    ConfigCategory {
+        name: i18n("About")
+        icon: "help-about"
+        source: "ConfigAbout.qml"
+    }
 }
+

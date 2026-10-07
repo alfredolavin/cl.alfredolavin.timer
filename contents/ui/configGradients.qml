@@ -34,4 +34,6 @@ KCM.SimpleKCM {
             opacity: 0.7
         }
     }
+
+    footer: ConfigFooter {}
 }

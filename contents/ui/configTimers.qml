@@ -307,6 +307,7 @@ KCM.SimpleKCM {
 
             QQC2.Button {
                 Kirigami.FormData.label: i18n("Icon:")
+                PropertyIcon { source: "preferences-desktop-icons" }
                 implicitWidth: Kirigami.Units.gridUnit * 4
                 implicitHeight: implicitWidth
                 QQC2.ToolTip.text: i18n("Choose an icon")
@@ -326,6 +327,7 @@ KCM.SimpleKCM {
             QQC2.TextField {
                 id: nameField
                 Kirigami.FormData.label: i18n("Name:")
+                PropertyIcon { source: "format-text-bold" }
                 Layout.preferredWidth: Kirigami.Units.gridUnit * 14
                 onTextEdited: page.setRole("name", text)
             }
@@ -333,6 +335,7 @@ KCM.SimpleKCM {
             QQC2.TextField {
                 id: messageField
                 Kirigami.FormData.label: i18n("Time's up text:")
+                PropertyIcon { source: "format-text-bold" }
                 Layout.preferredWidth: Kirigami.Units.gridUnit * 14
                 placeholderText: Util.finishedMessage({ name: nameField.text })
                 onTextEdited: page.setRole("message", text)
@@ -344,12 +347,14 @@ KCM.SimpleKCM {
             QQC2.ComboBox {
                 id: kindCombo
                 Kirigami.FormData.label: i18n("Type:")
+                PropertyIcon { source: "configure" }
                 model: [i18n("Timer: counts down a duration"), i18n("Alarm: counts down to a time of day")]
                 onActivated: index => page.setRole("kind", index === 1 ? "alarm" : "timer")
             }
 
             RowLayout {
                 Kirigami.FormData.label: i18n("Time:")
+                PropertyIcon { source: "configure" }
                 visible: kindCombo.currentIndex === 1
                 QQC2.SpinBox {
                     id: alarmHour
@@ -370,6 +375,7 @@ KCM.SimpleKCM {
 
             RowLayout {
                 Kirigami.FormData.label: i18n("Duration:")
+                PropertyIcon { source: "configure" }
                 visible: kindCombo.currentIndex === 0
                 QQC2.SpinBox { id: hours; from: 0; to: 99; editable: true; onValueModified: page.updateDuration() }
                 QQC2.Label { text: i18nc("hours", "h") }
@@ -401,6 +407,7 @@ KCM.SimpleKCM {
 
             RowLayout {
                 Kirigami.FormData.label: i18n("Alarm sound:")
+                PropertyIcon { source: "notifications" }
                 QQC2.ComboBox {
                     id: soundCombo
                     Layout.preferredWidth: Kirigami.Units.gridUnit * 10
@@ -431,6 +438,7 @@ KCM.SimpleKCM {
             QQC2.SpinBox {
                 id: repeatSpin
                 Kirigami.FormData.label: i18n("Alarm repeats:")
+                PropertyIcon { source: "notifications" }
                 from: 0
                 to: 50
                 editable: true
@@ -442,12 +450,14 @@ KCM.SimpleKCM {
             GradientChooserButton {
                 id: gradientCombo
                 Kirigami.FormData.label: i18n("Gradient:")
+                PropertyIcon { source: "configure" }
                 Layout.preferredWidth: Kirigami.Units.gridUnit * 14
                 onPicked: name => page.setRole("gradient", name)
             }
 
             GradientBar {
                 Kirigami.FormData.label: i18n("Preview:")
+                PropertyIcon { source: "configure" }
                 Layout.preferredWidth: Kirigami.Units.gridUnit * 14
                 Layout.preferredHeight: Kirigami.Units.gridUnit * 1.4
                 stops: GradientStore.find(gradientCombo.selected).stops
@@ -458,4 +468,6 @@ KCM.SimpleKCM {
             }
         }
     }
+
+    footer: ConfigFooter {}
 }
