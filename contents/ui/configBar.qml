@@ -96,6 +96,12 @@ KCM.SimpleKCM {
         commit();
     }
 
+    // Called from the row's own button: the row is destroyed by the removal, so the rest runs here
+    function removeAt(i) {
+        shadowModel.remove(i);
+        commit();
+    }
+
     Component.onCompleted: {
         loadShadows(Util.parseShadows(cfg_barShadows));
     }
@@ -495,7 +501,7 @@ KCM.SimpleKCM {
                     Tool {
                         icon.name: "edit-delete"
                         text: i18n("Remove")
-                        onClicked: { shadowModel.remove(row.index); page.commit(); }
+                        onClicked: page.removeAt(row.index)
                     }
 
                     RowLayout {

@@ -1,0 +1,6 @@
+module textspec
+TextSpecCore 1.0 TextSpecCore.js
+StyledText 1.0 StyledText.qml
+TextStylePreview 1.0 TextStylePreview.qml
+TextStyleDialog 1.0 TextStyleDialog.qml
+TextStyleButton 1.0 TextStyleButton.qml
