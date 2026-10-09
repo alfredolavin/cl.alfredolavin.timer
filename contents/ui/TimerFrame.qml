@@ -6,6 +6,7 @@ import org.kde.kirigami as Kirigami
 import "code/util.js" as Util
 import "code/gradients.js" as Gradients
 import "code/colorspec.js" as ColorSpec
+import "textspec/TextSpecCore.js" as TextSpecCore
 
 // Rounded frame: icon | name + gradient bar | play/pause | delete | extra buttons
 Rectangle {
@@ -135,6 +136,10 @@ Rectangle {
                 leftText: frame.entry && !frame.finished ? frame.entry.name : ""
                 clickableTime: !!frame.entry && !frame.finished
                 onTimeClicked: frame.app.toggleTimeDisplay(frame.uid)
+                nameSpec: cfg.nameStyle ? TextSpecCore.parse(cfg.nameStyle) : null
+                timeSpec: cfg.timeStyle ? TextSpecCore.parse(cfg.timeStyle) : null
+                finishedSpec: cfg.finishedStyle ? TextSpecCore.parse(cfg.finishedStyle) : null
+                finished: frame.finished
                 leftFontSize: cfg.nameFontSize
                 fontWeight: cfg.barFontWeight
                 textColor: frame.spec(cfg.barTextColor)

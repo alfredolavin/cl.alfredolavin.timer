@@ -47,6 +47,16 @@
         <entry name="buttonRadius" type="Int"><default>4</default></entry>
         <!-- color of the "time is up" text drawn over the progress bar -->
         <entry name="finishedTextColor" type="String"><default>#ff0000</default></entry>
+        <!-- textspec typography styles for timer name, time, and finished message -->
+        <entry name="nameStyle" type="String">
+            <default>{"fontFamily":"","weight":800,"pixelSize":9,"italic":false,"letterSpacing":0,"textColor":"#ffffff","outlineEnabled":true,"outlineWidth":1,"outlineColor":"#000000","glowEnabled":false,"glowColor":"#ffffaa00","glowRadius":6,"shadowEnabled":true,"shadowColor":"#cc000000","shadowBlur":4,"shadowX":1,"shadowY":1,"bgMode":"none"}</default>
+        </entry>
+        <entry name="timeStyle" type="String">
+            <default>{"fontFamily":"","weight":800,"pixelSize":12,"italic":false,"letterSpacing":0,"textColor":"#ffffff","outlineEnabled":true,"outlineWidth":1,"outlineColor":"#000000","glowEnabled":false,"glowColor":"#ffffaa00","glowRadius":6,"shadowEnabled":true,"shadowColor":"#cc000000","shadowBlur":4,"shadowX":1,"shadowY":1,"bgMode":"none"}</default>
+        </entry>
+        <entry name="finishedStyle" type="String">
+            <default>{"fontFamily":"","weight":800,"pixelSize":14,"italic":false,"letterSpacing":0,"textColor":"#ff0000","outlineEnabled":true,"outlineWidth":1,"outlineColor":"#000000","glowEnabled":false,"glowColor":"#ffffaa00","glowRadius":6,"shadowEnabled":true,"shadowColor":"#cc000000","shadowBlur":4,"shadowX":1,"shadowY":1,"bgMode":"none"}</default>
+        </entry>
     </group>
 
     <group name="ProgressBar">

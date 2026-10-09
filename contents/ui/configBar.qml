@@ -8,6 +8,8 @@ import "code/util.js" as Util
 import "gradientpicker"
 import "code/gradients.js" as Gradients
 import "code/colorspec.js" as ColorSpec
+import "textspec"
+import "textspec/TextSpecCore.js" as TextSpecCore
 
 KCM.SimpleKCM {
     id: page
@@ -16,6 +18,10 @@ KCM.SimpleKCM {
     SystemTheme {
         id: sys
     }
+
+    property alias cfg_nameStyle: nameStyleBtn.value
+    property alias cfg_timeStyle: timeStyleBtn.value
+    property alias cfg_finishedStyle: finishedStyleBtn.value
 
     property alias cfg_trackColor: trackColor.value
     property alias cfg_barBorderColor: barBorderColor.value
@@ -161,6 +167,9 @@ KCM.SimpleKCM {
                     marker: page.marker
                     shadow: page.cfg_textShadow
                     leftText: i18n("Tea")
+                    nameSpec: nameStyleBtn.value ? TextSpecCore.parse(nameStyleBtn.value) : null
+                    timeSpec: timeStyleBtn.value ? TextSpecCore.parse(timeStyleBtn.value) : null
+                    finishedSpec: finishedStyleBtn.value ? TextSpecCore.parse(finishedStyleBtn.value) : null
                     leftFontSize: nameFontSize.value
                     fontSize: timeFontSize.value
                     fontWeight: weightSlider.value
@@ -191,6 +200,9 @@ KCM.SimpleKCM {
                         marker: page.marker
                         shadow: page.cfg_textShadow
                         leftText: i18n("Tea")
+                        nameSpec: nameStyleBtn.value ? TextSpecCore.parse(nameStyleBtn.value) : null
+                        timeSpec: timeStyleBtn.value ? TextSpecCore.parse(timeStyleBtn.value) : null
+                        finishedSpec: finishedStyleBtn.value ? TextSpecCore.parse(finishedStyleBtn.value) : null
                         leftFontSize: nameFontSize.value
                         fontSize: timeFontSize.value
                         fontWeight: weightSlider.value
@@ -258,49 +270,75 @@ KCM.SimpleKCM {
             }
             QQC2.SpinBox { id: barBorderWidth; Kirigami.FormData.label: i18n("Border width:"); from: 0; to: 8 }
 
-            Kirigami.Separator { Kirigami.FormData.isSection: true; Kirigami.FormData.label: i18n("Text (name, time and messages)") }
+            Kirigami.Separator { Kirigami.FormData.isSection: true; Kirigami.FormData.label: i18n("Text Typography (name, time and messages)") }
 
-            component FontSizeSpin: QQC2.SpinBox {
-                from: 0
-                to: 60
-                editable: true
-                textFromValue: v => v === 0 ? i18n("Fill") : i18n("%1 px", v)
-                valueFromText: t => t === i18n("Fill") ? 0 : (parseInt(t) || 0)
-                QQC2.ToolTip.text: i18n("Fill: as large as the bar's height allows")
-                QQC2.ToolTip.visible: hovered
-                QQC2.ToolTip.delay: Kirigami.Units.toolTipDelay
-            }
-            FontSizeSpin { id: nameFontSize; Kirigami.FormData.label: i18n("Name size:") }
-            FontSizeSpin { id: timeFontSize; Kirigami.FormData.label: i18n("Time size:") }
             RowLayout {
-                Kirigami.FormData.label: i18n("Font weight:")
-                PropertyIcon { source: "format-text-bold" }
-                QQC2.Slider { id: weightSlider; from: 300; to: 900; stepSize: 50; Layout.preferredWidth: Kirigami.Units.gridUnit * 10 }
-                QQC2.Label { text: i18n("%1 (Rubik)", weightSlider.value) }
+                Kirigami.FormData.label: i18n("Timer name:")
+                PropertyIcon { source: "draw-text" }
+
+                RichTextEdit {
+                    id: nameStyleBtn
+                    sampleText: "Tea"
+                    dialogTitle: i18n("Timer Name Typography")
+                    value: plasmoid.configuration.nameStyle || ""
+                    onEdited: newValue => {
+                        cfg_nameStyle = newValue;
+                        var s = TextSpecCore.parse(newValue);
+                        if (s) {
+                            cfg_nameFontSize = s.pixelSize || 9;
+                            cfg_barFontWeight = s.weight || 800;
+                            cfg_barTextColor = s.textColor || "#ffffff";
+                            cfg_barTextOutlineColor = s.outlineColor || "#000000";
+                            cfg_barTextOutlineWidth = s.outlineWidth || 1;
+                        }
+                    }
+                }
             }
-            ColorSpecButton {
-                id: textColorButton
-                Kirigami.FormData.label: i18n("Text color:")
-                dialogTitle: i18n("Text color inside the bar")
-                gradients: page.gradients
-                runningState: page.cfg_runningState
+
+            RowLayout {
+                Kirigami.FormData.label: i18n("Time remaining:")
+                PropertyIcon { source: "chronometer" }
+
+                RichTextEdit {
+                    id: timeStyleBtn
+                    sampleText: "05:00"
+                    dialogTitle: i18n("Time Remaining Typography")
+                    value: plasmoid.configuration.timeStyle || ""
+                    onEdited: newValue => {
+                        cfg_timeStyle = newValue;
+                        var s = TextSpecCore.parse(newValue);
+                        if (s) {
+                            cfg_timeFontSize = s.pixelSize || 12;
+                        }
+                    }
+                }
             }
-            ColorSpecButton {
-                id: outlineColorButton
-                Kirigami.FormData.label: i18n("Outline color:")
-                dialogTitle: i18n("Text outline color")
-                gradients: page.gradients
-                runningState: page.cfg_runningState
+
+            RowLayout {
+                Kirigami.FormData.label: i18n("Finished message:")
+                PropertyIcon { source: "notifications" }
+
+                RichTextEdit {
+                    id: finishedStyleBtn
+                    sampleText: i18n("Time is up!")
+                    dialogTitle: i18n("Finished Message Typography")
+                    value: plasmoid.configuration.finishedStyle || ""
+                    onEdited: newValue => {
+                        cfg_finishedStyle = newValue;
+                    }
+                }
             }
-            QQC2.SpinBox {
-                id: outlineWidthSpin
-                Kirigami.FormData.label: i18n("Outline width:")
-                PropertyIcon { source: "transform-scale-horizontal" }
-                leftPadding: 28
-                from: 0
-                to: 3
-                textFromValue: v => v === 0 ? i18n("None") : i18n("%1 px", v)
-                valueFromText: t => parseInt(t) || 0
+
+            // Hidden legacy controls to maintain property alias validity
+            Item {
+                visible: false
+                width: 0; height: 0
+                QQC2.SpinBox { id: nameFontSize; value: plasmoid.configuration.nameFontSize }
+                QQC2.SpinBox { id: timeFontSize; value: plasmoid.configuration.timeFontSize }
+                QQC2.Slider { id: weightSlider; value: plasmoid.configuration.barFontWeight }
+                ColorSpecButton { id: textColorButton; value: plasmoid.configuration.barTextColor }
+                ColorSpecButton { id: outlineColorButton; value: plasmoid.configuration.barTextOutlineColor }
+                QQC2.SpinBox { id: outlineWidthSpin; value: plasmoid.configuration.barTextOutlineWidth }
             }
 
             Kirigami.Separator { Kirigami.FormData.isSection: true; Kirigami.FormData.label: i18n("Glow") }

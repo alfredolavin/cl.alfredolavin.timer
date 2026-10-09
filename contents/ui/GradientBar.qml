@@ -41,6 +41,10 @@ Item {
     // Marker at the end of the fill, or null:
     // {line, lineWidth, circle, circleSize, circlePosition: "top"|"middle"|"bottom", color, blink, period (ms)}
     property var marker: null
+    property var nameSpec: null
+    property var timeSpec: null
+    property var finishedSpec: null
+    property bool finished: false
 
     readonly property real clamped: Math.max(0, Math.min(1, progress))
     readonly property bool split: leftText.length > 0
@@ -292,9 +296,17 @@ Item {
         elide: Text.ElideRight
         text: bar.leftText
         visible: bar.split && width > 0
-        color: bar.textColor
-        font.pixelSize: bar.leftFontSize > 0 ? bar.leftFontSize : Math.max(6, bar.height)
+        color: (bar.nameSpec && bar.nameSpec.textColor) ? Qt.color(bar.nameSpec.textColor) : bar.textColor
+        outlineColor: (bar.nameSpec && bar.nameSpec.outlineEnabled && bar.nameSpec.outlineColor) ? Qt.color(bar.nameSpec.outlineColor) : b.outlineColor
+        outlineWidth: (bar.nameSpec && bar.nameSpec.outlineEnabled) ? bar.nameSpec.outlineWidth : b.outlineWidth
+        font.family: (bar.nameSpec && bar.nameSpec.fontFamily) ? bar.nameSpec.fontFamily : b.fontFamily
+        font.weight: (bar.nameSpec && bar.nameSpec.weight) ? bar.nameSpec.weight : b.fontWeight
+        font.italic: bar.nameSpec ? !!bar.nameSpec.italic : false
+        font.letterSpacing: (bar.nameSpec && bar.nameSpec.letterSpacing) ? bar.nameSpec.letterSpacing : 0
+        font.pixelSize: (bar.nameSpec && bar.nameSpec.pixelSize > 0) ? bar.nameSpec.pixelSize : (bar.leftFontSize > 0 ? bar.leftFontSize : Math.max(6, bar.height))
     }
+
+    readonly property var activeTimeSpec: (bar.finished && bar.finishedSpec) ? bar.finishedSpec : bar.timeSpec
 
     BarText {
         id: label
@@ -308,8 +320,14 @@ Item {
         fontSizeMode: Text.Fit
         text: bar.text
         visible: text.length > 0
-        color: bar.labelColor ?? bar.textColor
-        font.pixelSize: bar.fontSize > 0 ? bar.fontSize : Math.max(6, bar.height)
+        color: (bar.activeTimeSpec && bar.activeTimeSpec.textColor) ? Qt.color(bar.activeTimeSpec.textColor) : (bar.labelColor ?? bar.textColor)
+        outlineColor: (bar.activeTimeSpec && bar.activeTimeSpec.outlineEnabled && bar.activeTimeSpec.outlineColor) ? Qt.color(bar.activeTimeSpec.outlineColor) : b.outlineColor
+        outlineWidth: (bar.activeTimeSpec && bar.activeTimeSpec.outlineEnabled) ? bar.activeTimeSpec.outlineWidth : b.outlineWidth
+        font.family: (bar.activeTimeSpec && bar.activeTimeSpec.fontFamily) ? bar.activeTimeSpec.fontFamily : b.fontFamily
+        font.weight: (bar.activeTimeSpec && bar.activeTimeSpec.weight) ? bar.activeTimeSpec.weight : b.fontWeight
+        font.italic: bar.activeTimeSpec ? !!bar.activeTimeSpec.italic : false
+        font.letterSpacing: (bar.activeTimeSpec && bar.activeTimeSpec.letterSpacing) ? bar.activeTimeSpec.letterSpacing : 0
+        font.pixelSize: (bar.activeTimeSpec && bar.activeTimeSpec.pixelSize > 0) ? bar.activeTimeSpec.pixelSize : (bar.fontSize > 0 ? bar.fontSize : Math.max(6, bar.height))
         font.features: { "tnum": 1 }
     }
 

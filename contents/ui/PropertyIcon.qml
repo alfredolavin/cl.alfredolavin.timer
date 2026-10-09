@@ -14,10 +14,29 @@ Item {
     property string nerdIcon: ""
     property color color: Kirigami.Theme.highlightColor
 
+    // Target left padding for parent controls containing an embedded icon
+    property int reservedPadding: 28
+
+    readonly property bool isInsideControl: parent && parent.leftPadding !== undefined
+
     // If inside a control (parent has leftPadding defined),
     // automatically position vertically centered at x: 4
-    x: (parent && parent.leftPadding !== undefined) ? 4 : 0
-    anchors.verticalCenter: (parent && parent.leftPadding !== undefined) ? parent.verticalCenter : undefined
+    x: isInsideControl ? 4 : 0
+    anchors.verticalCenter: isInsideControl ? parent.verticalCenter : undefined
+
+    function applyPadding() {
+        if (isInsideControl) {
+            if (parent.indicator && parent.indicator.x < 15) {
+                return;
+            }
+            if (parent.leftPadding < reservedPadding) {
+                parent.leftPadding = reservedPadding;
+            }
+        }
+    }
+
+    Component.onCompleted: applyPadding()
+    onParentChanged: applyPadding()
 
     Kirigami.Icon {
         id: iconItem

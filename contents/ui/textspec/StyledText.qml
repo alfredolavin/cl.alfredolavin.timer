@@ -31,6 +31,8 @@ Item {
 
     implicitWidth: Math.ceil(bgRect.visible ? contentContainer.implicitWidth + (activeSpec.bgPadding * 2) : contentContainer.implicitWidth)
     implicitHeight: Math.ceil(bgRect.visible ? contentContainer.implicitHeight + (activeSpec.bgPadding * 2) : contentContainer.implicitHeight)
+    readonly property real contentWidth: contentContainer.implicitWidth
+    readonly property real contentHeight: contentContainer.implicitHeight
 
     // Background solid color layer
     Rectangle {
