@@ -5,12 +5,17 @@ import org.kde.kirigami as Kirigami
 import org.kde.kcmutils as KCM
 
 import "code/util.js" as Util
+import "common"
+import "controls"
+import "controls/IconMetrics.js" as IconMetrics
 import "gradientpicker"
-import "code/gradients.js" as Gradients
+import "gradientpicker/code/gradients.js" as Gradients
 import "code/colorspec.js" as ColorSpec
 import "textspec"
 import "textspec/TextSpecCore.js" as TextSpecCore
 
+// The progress bar: background, border, text styles, glow, progress marker and shadows, with a live preview.
+// Every control holds the icon of its setting (controls/).
 KCM.SimpleKCM {
     id: page
 
@@ -19,14 +24,14 @@ KCM.SimpleKCM {
         id: sys
     }
 
-    property alias cfg_nameStyle: nameStyleBtn.value
-    property alias cfg_timeStyle: timeStyleBtn.value
-    property alias cfg_finishedStyle: finishedStyleBtn.value
+    property string cfg_nameStyle
+    property string cfg_timeStyle
+    property string cfg_finishedStyle
 
     property alias cfg_trackColor: trackColor.value
     property alias cfg_barBorderColor: barBorderColor.value
     property alias cfg_barBorderWidth: barBorderWidth.value
-    property string cfg_barShadows
+    property alias cfg_barShadows: shadowEditor.value
     property alias cfg_glowEnabled: glowEnabled.checked
     property string cfg_barGlowColor
     // older glow color settings, used while cfg_barGlowColor is empty
@@ -35,12 +40,13 @@ KCM.SimpleKCM {
     property alias cfg_glowRadius: glowRadius.value
     property alias cfg_glowStrength: glowStrength.value
     property alias cfg_glowOpacity: glowOpacity.value
-    property alias cfg_barFontWeight: weightSlider.value
-    property alias cfg_barTextColor: textColorButton.value
-    property alias cfg_barTextOutlineColor: outlineColorButton.value
-    property alias cfg_barTextOutlineWidth: outlineWidthSpin.value
-    property alias cfg_nameFontSize: nameFontSize.value
-    property alias cfg_timeFontSize: timeFontSize.value
+    // text inside the bar before the text styles: kept in step with them (set when a style is edited), read by the widget
+    property int cfg_barFontWeight
+    property string cfg_barTextColor
+    property string cfg_barTextOutlineColor
+    property int cfg_barTextOutlineWidth
+    property int cfg_nameFontSize
+    property int cfg_timeFontSize
     property alias cfg_markerLine: markerLine.checked
     property alias cfg_markerLineWidth: markerLineWidth.value
     property alias cfg_markerCircle: markerCircle.checked
@@ -67,7 +73,7 @@ KCM.SimpleKCM {
     property bool cfg_textShadow
 
     readonly property var gradients: GradientStore.gradients
-    readonly property var shadows: Util.parseShadows(cfg_barShadows)
+    readonly property var shadows: TextSpecCore.parseShadows(cfg_barShadows)
     readonly property var glow: ({ enabled: glowEnabled.checked, color: page.col(glowColor.value),
                                    radius: glowRadius.value, strength: glowStrength.value, opacity: glowOpacity.value / 100 })
     property real previewProgress: 0.62
@@ -80,38 +86,6 @@ KCM.SimpleKCM {
         const c = ColorSpec.resolveString(spec, stage.stops, previewProgress, sys.map);
         return Qt.rgba(c.r, c.g, c.b, c.a);
     }
-
-    ListModel { id: shadowModel }
-
-    function loadShadows(list) {
-        shadowModel.clear();
-        list.forEach(s => shadowModel.append(Util.normalizeShadow(s)));
-    }
-
-    function commit() {
-        const a = [];
-        for (let i = 0; i < shadowModel.count; ++i) {
-            const s = shadowModel.get(i);
-            a.push({ enabled: s.enabled, x: s.x, y: s.y, blur: s.blur, spread: s.spread, color: s.color, inset: s.inset });
-        }
-        cfg_barShadows = JSON.stringify(a);
-    }
-
-    function setShadow(i, role, value) {
-        shadowModel.setProperty(i, role, value);
-        commit();
-    }
-
-    // Called from the row's own button: the row is destroyed by the removal, so the rest runs here
-    function removeAt(i) {
-        shadowModel.remove(i);
-        commit();
-    }
-
-    Component.onCompleted: {
-        loadShadows(Util.parseShadows(cfg_barShadows));
-    }
-
 
     Timer {
         running: animate.checked
@@ -167,15 +141,15 @@ KCM.SimpleKCM {
                     marker: page.marker
                     shadow: page.cfg_textShadow
                     leftText: i18n("Tea")
-                    nameSpec: nameStyleBtn.value ? TextSpecCore.parse(nameStyleBtn.value) : null
-                    timeSpec: timeStyleBtn.value ? TextSpecCore.parse(timeStyleBtn.value) : null
-                    finishedSpec: finishedStyleBtn.value ? TextSpecCore.parse(finishedStyleBtn.value) : null
-                    leftFontSize: nameFontSize.value
-                    fontSize: timeFontSize.value
-                    fontWeight: weightSlider.value
-                    textColor: page.col(textColorButton.value)
-                    outlineColor: page.col(outlineColorButton.value)
-                    outlineWidth: outlineWidthSpin.value
+                    nameSpec: page.cfg_nameStyle ? TextSpecCore.parse(page.cfg_nameStyle) : null
+                    timeSpec: page.cfg_timeStyle ? TextSpecCore.parse(page.cfg_timeStyle) : null
+                    finishedSpec: page.cfg_finishedStyle ? TextSpecCore.parse(page.cfg_finishedStyle) : null
+                    leftFontSize: page.cfg_nameFontSize
+                    fontSize: page.cfg_timeFontSize
+                    fontWeight: page.cfg_barFontWeight
+                    textColor: page.col(page.cfg_barTextColor)
+                    outlineColor: page.col(page.cfg_barTextOutlineColor)
+                    outlineWidth: page.cfg_barTextOutlineWidth
                 }
 
                 RowLayout {
@@ -200,15 +174,15 @@ KCM.SimpleKCM {
                         marker: page.marker
                         shadow: page.cfg_textShadow
                         leftText: i18n("Tea")
-                        nameSpec: nameStyleBtn.value ? TextSpecCore.parse(nameStyleBtn.value) : null
-                        timeSpec: timeStyleBtn.value ? TextSpecCore.parse(timeStyleBtn.value) : null
-                        finishedSpec: finishedStyleBtn.value ? TextSpecCore.parse(finishedStyleBtn.value) : null
-                        leftFontSize: nameFontSize.value
-                        fontSize: timeFontSize.value
-                        fontWeight: weightSlider.value
-                        textColor: page.col(textColorButton.value)
-                        outlineColor: page.col(outlineColorButton.value)
-                        outlineWidth: outlineWidthSpin.value
+                        nameSpec: page.cfg_nameStyle ? TextSpecCore.parse(page.cfg_nameStyle) : null
+                        timeSpec: page.cfg_timeStyle ? TextSpecCore.parse(page.cfg_timeStyle) : null
+                        finishedSpec: page.cfg_finishedStyle ? TextSpecCore.parse(page.cfg_finishedStyle) : null
+                        leftFontSize: page.cfg_nameFontSize
+                        fontSize: page.cfg_timeFontSize
+                        fontWeight: page.cfg_barFontWeight
+                        textColor: page.col(page.cfg_barTextColor)
+                        outlineColor: page.col(page.cfg_barTextOutlineColor)
+                        outlineWidth: page.cfg_barTextOutlineWidth
                     }
                 }
             }
@@ -220,26 +194,38 @@ KCM.SimpleKCM {
             Layout.rightMargin: Kirigami.Units.smallSpacing
             GradientChooserButton {
                 id: gradientCombo
-                Layout.preferredWidth: Kirigami.Units.gridUnit * 9
+                leftPadding: IconMetrics.reserve
+                Layout.preferredWidth: Kirigami.Units.gridUnit * 9 + IconMetrics.reserve
                 selected: GradientStore.gradients.length ? GradientStore.gradients[0].name : ""
                 QQC2.ToolTip.text: i18n("Gradient of the preview")
+                PropertyIcon { name: "color-gradient" }
             }
-            QQC2.ComboBox {
+            IconComboBox {
                 id: stageCombo
+                iconName: "games-config-background"
                 model: [i18n("Widget background"), i18n("Light background"), i18n("Dark background")]
-                Layout.preferredWidth: Kirigami.Units.gridUnit * 9
+                QQC2.ToolTip.text: i18n("Background behind the preview")
+                QQC2.ToolTip.visible: hovered
+                QQC2.ToolTip.delay: Kirigami.Units.toolTipDelay
             }
-            QQC2.Slider {
+            IconValueSlider {
                 Layout.fillWidth: true
+                iconName: "office-chart-bar-percentage"
                 from: 0
                 to: 1
+                stepSize: 0.01
                 value: page.previewProgress
+                format: v => i18n("%1 % filled", Math.round(v * 100))
                 onMoved: {
                     animate.checked = false;
                     page.previewProgress = value;
                 }
             }
-            QQC2.CheckBox { id: animate; text: i18n("Animate") }
+            IconCheckBox {
+                id: animate
+                iconName: "media-playback-start"
+                text: i18n("Animate")
+            }
         }
 
         Kirigami.Separator { Layout.fillWidth: true }
@@ -248,7 +234,6 @@ KCM.SimpleKCM {
     ColumnLayout {
         spacing: Kirigami.Units.largeSpacing
 
-        // ---------- background & border ----------
         Kirigami.FormLayout {
             Layout.fillWidth: true
 
@@ -257,6 +242,7 @@ KCM.SimpleKCM {
             ColorSpecButton {
                 id: trackColor
                 Kirigami.FormData.label: i18n("Background color:")
+                iconName: "color-fill"
                 dialogTitle: i18n("Progress bar background color")
                 gradients: page.gradients
                 runningState: page.cfg_runningState
@@ -264,151 +250,160 @@ KCM.SimpleKCM {
             ColorSpecButton {
                 id: barBorderColor
                 Kirigami.FormData.label: i18n("Border color:")
+                iconName: "format-stroke-color"
                 dialogTitle: i18n("Progress bar border color")
                 gradients: page.gradients
                 runningState: page.cfg_runningState
             }
-            QQC2.SpinBox { id: barBorderWidth; Kirigami.FormData.label: i18n("Border width:"); from: 0; to: 8 }
+            IconSpinBox {
+                id: barBorderWidth
+                Kirigami.FormData.label: i18n("Border width:")
+                iconName: "edit-line-width"
+                from: 0
+                to: 8
+                suffix: i18nc("unit, after a number", " px")
+            }
 
-            Kirigami.Separator { Kirigami.FormData.isSection: true; Kirigami.FormData.label: i18n("Text Typography (name, time and messages)") }
+            Kirigami.Separator { Kirigami.FormData.isSection: true; Kirigami.FormData.label: i18n("Text (name, time and messages)") }
 
-            RowLayout {
+            // RichTextEdit has no padding of its own: it is widened and its sample stays centred, clear of the icon
+            RichTextEdit {
+                iconName: "draw-text"
                 Kirigami.FormData.label: i18n("Timer name:")
-                PropertyIcon { source: "draw-text" }
-
-                RichTextEdit {
-                    id: nameStyleBtn
-                    sampleText: "Tea"
-                    dialogTitle: i18n("Timer Name Typography")
-                    value: plasmoid.configuration.nameStyle || ""
-                    onEdited: newValue => {
-                        cfg_nameStyle = newValue;
-                        var s = TextSpecCore.parse(newValue);
-                        if (s) {
-                            cfg_nameFontSize = s.pixelSize || 9;
-                            cfg_barFontWeight = s.weight || 800;
-                            cfg_barTextColor = s.textColor || "#ffffff";
-                            cfg_barTextOutlineColor = s.outlineColor || "#000000";
-                            cfg_barTextOutlineWidth = s.outlineWidth || 1;
-                        }
+                sampleText: i18nc("sample timer name", "Tea")
+                dialogTitle: i18n("Timer Name Typography")
+                value: page.cfg_nameStyle
+                onEdited: newValue => {
+                    page.cfg_nameStyle = newValue;
+                    const s = TextSpecCore.parse(newValue);
+                    if (s) {
+                        page.cfg_nameFontSize = s.pixelSize || 9;
+                        page.cfg_barFontWeight = s.weight || 800;
+                        page.cfg_barTextColor = s.textColor || "#ffffff";
+                        page.cfg_barTextOutlineColor = s.outlineColor || "#000000";
+                        page.cfg_barTextOutlineWidth = s.outlineWidth || 1;
                     }
                 }
             }
-
-            RowLayout {
+            RichTextEdit {
+                iconName: "chronometer"
                 Kirigami.FormData.label: i18n("Time remaining:")
-                PropertyIcon { source: "chronometer" }
-
-                RichTextEdit {
-                    id: timeStyleBtn
-                    sampleText: "05:00"
-                    dialogTitle: i18n("Time Remaining Typography")
-                    value: plasmoid.configuration.timeStyle || ""
-                    onEdited: newValue => {
-                        cfg_timeStyle = newValue;
-                        var s = TextSpecCore.parse(newValue);
-                        if (s) {
-                            cfg_timeFontSize = s.pixelSize || 12;
-                        }
-                    }
+                sampleText: "05:00"
+                dialogTitle: i18n("Time Remaining Typography")
+                value: page.cfg_timeStyle
+                onEdited: newValue => {
+                    page.cfg_timeStyle = newValue;
+                    const s = TextSpecCore.parse(newValue);
+                    if (s)
+                        page.cfg_timeFontSize = s.pixelSize || 12;
                 }
             }
-
-            RowLayout {
+            RichTextEdit {
+                iconName: "notifications"
                 Kirigami.FormData.label: i18n("Finished message:")
-                PropertyIcon { source: "notifications" }
-
-                RichTextEdit {
-                    id: finishedStyleBtn
-                    sampleText: i18n("Time is up!")
-                    dialogTitle: i18n("Finished Message Typography")
-                    value: plasmoid.configuration.finishedStyle || ""
-                    onEdited: newValue => {
-                        cfg_finishedStyle = newValue;
-                    }
-                }
-            }
-
-            // Hidden legacy controls to maintain property alias validity
-            Item {
-                visible: false
-                width: 0; height: 0
-                QQC2.SpinBox { id: nameFontSize; value: plasmoid.configuration.nameFontSize }
-                QQC2.SpinBox { id: timeFontSize; value: plasmoid.configuration.timeFontSize }
-                QQC2.Slider { id: weightSlider; value: plasmoid.configuration.barFontWeight }
-                ColorSpecButton { id: textColorButton; value: plasmoid.configuration.barTextColor }
-                ColorSpecButton { id: outlineColorButton; value: plasmoid.configuration.barTextOutlineColor }
-                QQC2.SpinBox { id: outlineWidthSpin; value: plasmoid.configuration.barTextOutlineWidth }
+                sampleText: i18n("Time is up!")
+                dialogTitle: i18n("Finished Message Typography")
+                value: page.cfg_finishedStyle
+                onEdited: newValue => page.cfg_finishedStyle = newValue
             }
 
             Kirigami.Separator { Kirigami.FormData.isSection: true; Kirigami.FormData.label: i18n("Glow") }
 
-            QQC2.CheckBox { id: glowEnabled; Kirigami.FormData.label: i18n("Glow:"); text: i18n("Glow around the filled part") }
+            IconCheckBox {
+                id: glowEnabled
+                Kirigami.FormData.label: i18n("Glow:")
+                iconName: "colorfx"
+                text: i18n("Glow around the filled part")
+            }
             ColorSpecButton {
                 id: glowColor
                 Kirigami.FormData.label: i18n("Color:")
+                iconName: "color-picker-white"
                 enabled: glowEnabled.checked
                 dialogTitle: i18n("Glow color")
                 gradients: page.gradients
                 runningState: page.cfg_runningState
                 value: ColorSpec.glowSpec(page.cfg_barGlowColor, { glowUseGradient: page.cfg_glowUseGradient, glowColor: page.cfg_glowColor })
-                onEdited: page.cfg_barGlowColor = value
+                onEdited: v => page.cfg_barGlowColor = v
             }
-            RowLayout {
+            IconValueSlider {
+                id: glowRadius
                 Kirigami.FormData.label: i18n("Radius:")
-                PropertyIcon { source: "draw-circle" }
+                iconName: "path-outset"
                 enabled: glowEnabled.checked
-                QQC2.Slider { id: glowRadius; from: 1; to: 30; stepSize: 1; Layout.preferredWidth: Kirigami.Units.gridUnit * 10 }
-                QQC2.Label { text: i18n("%1 px", glowRadius.value) }
+                from: 1
+                to: 30
+                stepSize: 1
+                format: v => i18n("%1 px", v)
+                Layout.preferredWidth: Kirigami.Units.gridUnit * 14
             }
-            RowLayout {
+            IconValueSlider {
+                id: glowOpacity
                 Kirigami.FormData.label: i18n("Opacity:")
-                PropertyIcon { source: "edit-opacity" }
+                iconName: "edit-opacity"
                 enabled: glowEnabled.checked
-                QQC2.Slider { id: glowOpacity; from: 0; to: 100; stepSize: 1; Layout.preferredWidth: Kirigami.Units.gridUnit * 10 }
-                QQC2.Label { text: glowOpacity.value + " %" }
+                from: 0
+                to: 100
+                stepSize: 1
+                format: v => i18n("%1 %", v)
+                Layout.preferredWidth: Kirigami.Units.gridUnit * 14
             }
-            QQC2.SpinBox {
+            IconSpinBox {
                 id: glowStrength
                 Kirigami.FormData.label: i18n("Strength:")
-                PropertyIcon { source: "configure" }
-                leftPadding: 28
+                iconName: "dialog-layers"
                 enabled: glowEnabled.checked
                 from: 1
                 to: 5
                 textFromValue: v => i18np("%1 layer", "%1 layers", v)
                 valueFromText: t => parseInt(t) || 1
+                QQC2.ToolTip.text: i18n("How many times the glow is drawn over itself")
+                QQC2.ToolTip.visible: hovered
+                QQC2.ToolTip.delay: Kirigami.Units.toolTipDelay
             }
 
             Kirigami.Separator { Kirigami.FormData.isSection: true; Kirigami.FormData.label: i18n("Progress marker") }
 
             RowLayout {
                 Kirigami.FormData.label: i18n("Line:")
-                PropertyIcon { source: "configure" }
-                QQC2.CheckBox { id: markerLine; text: i18n("Vertical line where the fill ends") }
-                QQC2.SpinBox {
+                IconCheckBox {
+                    id: markerLine
+                    iconName: "draw-line"
+                    text: i18n("Vertical line where the fill ends")
+                }
+                IconSpinBox {
                     id: markerLineWidth
+                    iconName: "object-stroke-style"
                     enabled: markerLine.checked
                     from: 1
                     to: 10
-                    textFromValue: v => i18n("%1 px", v)
-                    valueFromText: t => parseInt(t) || 1
+                    suffix: i18nc("unit, after a number", " px")
+                    QQC2.ToolTip.text: i18n("Line width")
+                    QQC2.ToolTip.visible: hovered
+                    QQC2.ToolTip.delay: Kirigami.Units.toolTipDelay
                 }
             }
             RowLayout {
                 Kirigami.FormData.label: i18n("Circle:")
-                PropertyIcon { source: "draw-circle" }
-                QQC2.CheckBox { id: markerCircle; text: i18n("Circle where the fill ends") }
-                QQC2.SpinBox {
+                IconCheckBox {
+                    id: markerCircle
+                    iconName: "draw-ellipse"
+                    text: i18n("Circle where the fill ends")
+                }
+                IconSpinBox {
                     id: markerCircleSize
+                    iconName: "zoom-in"
                     enabled: markerCircle.checked
                     from: 2
                     to: 40
-                    textFromValue: v => i18n("%1 px", v)
-                    valueFromText: t => parseInt(t) || 2
+                    suffix: i18nc("unit, after a number", " px")
+                    QQC2.ToolTip.text: i18n("Circle size")
+                    QQC2.ToolTip.visible: hovered
+                    QQC2.ToolTip.delay: Kirigami.Units.toolTipDelay
                 }
-                QQC2.ComboBox {
+                IconComboBox {
                     readonly property var positions: ["top", "middle", "bottom"]
+                    iconName: "align-vertical-center"
                     enabled: markerCircle.checked
                     model: [i18n("At the top"), i18n("In the middle"), i18n("At the bottom")]
                     currentIndex: Math.max(0, positions.indexOf(page.cfg_markerCirclePosition))
@@ -418,6 +413,7 @@ KCM.SimpleKCM {
             ColorSpecButton {
                 id: markerColor
                 Kirigami.FormData.label: i18n("Color:")
+                iconName: "color-picker"
                 enabled: markerLine.checked || markerCircle.checked
                 dialogTitle: i18n("Progress marker color")
                 gradients: page.gradients
@@ -425,11 +421,15 @@ KCM.SimpleKCM {
             }
             RowLayout {
                 Kirigami.FormData.label: i18n("Blink:")
-                PropertyIcon { source: "configure" }
                 enabled: markerLine.checked || markerCircle.checked
-                QQC2.CheckBox { id: markerBlink; text: i18n("Blink every") }
-                QQC2.SpinBox {
+                IconCheckBox {
+                    id: markerBlink
+                    iconName: "visibility"
+                    text: i18n("Blink every")
+                }
+                IconSpinBox {
                     id: markerBlinkPeriod
+                    iconName: "player-time"
                     enabled: markerBlink.checked
                     from: 200
                     to: 5000
@@ -442,141 +442,14 @@ KCM.SimpleKCM {
             Kirigami.Separator { Kirigami.FormData.isSection: true; Kirigami.FormData.label: i18n("Shadows") }
         }
 
-        // ---------- shadow list ----------
-        RowLayout {
+        TextShadowListEditor {
+            id: shadowEditor
+            forText: false
             Layout.fillWidth: true
-            QQC2.Button {
-                icon.name: "list-add"
-                text: i18n("Add shadow")
-                onClicked: {
-                    shadowModel.append(Util.normalizeShadow({}));
-                    page.commit();
-                }
-            }
-            Item { Layout.fillWidth: true }
-            QQC2.ComboBox {
-                id: presetCombo
-                model: Util.shadowPresets.map(p => p.name)
-                Layout.preferredWidth: Kirigami.Units.gridUnit * 9
-            }
-            QQC2.Button {
-                text: i18n("Append preset")
-                icon.name: "list-add"
-                onClicked: {
-                    Util.shadowPresets[presetCombo.currentIndex].shadows.forEach(s => shadowModel.append(Util.normalizeShadow(s)));
-                    page.commit();
-                }
-            }
-            QQC2.Button {
-                text: i18n("Use preset")
-                icon.name: "document-replace"
-                onClicked: {
-                    page.loadShadows(Util.shadowPresets[presetCombo.currentIndex].shadows);
-                    page.commit();
-                }
-            }
-        }
-
-        QQC2.Label {
-            visible: shadowModel.count === 0
-            Layout.fillWidth: true
-            horizontalAlignment: Text.AlignHCenter
-            opacity: 0.7
-            text: i18n("No shadows. Add one or pick a preset.")
-        }
-
-        Repeater {
-            model: shadowModel
-
-            delegate: QQC2.Frame {
-                id: row
-                required property int index
-                required property var model
-                Layout.fillWidth: true
-
-                GridLayout {
-                    anchors.fill: parent
-                    columns: 8
-                    columnSpacing: Kirigami.Units.smallSpacing
-                    rowSpacing: Kirigami.Units.smallSpacing
-
-                    QQC2.CheckBox {
-                        checked: row.model.enabled
-                        onToggled: page.setShadow(row.index, "enabled", checked)
-                        QQC2.ToolTip.text: i18n("Enabled")
-                        QQC2.ToolTip.visible: hovered
-                    }
-                    ColorSpecButton {
-                        value: row.model.color
-                        dialogTitle: i18n("Shadow color")
-                        gradients: page.gradients
-                        runningState: page.cfg_runningState
-                        onEdited: page.setShadow(row.index, "color", value)
-                    }
-                    QQC2.CheckBox {
-                        text: i18n("Inset")
-                        checked: row.model.inset
-                        onToggled: page.setShadow(row.index, "inset", checked)
-                    }
-                    Item { Layout.fillWidth: true; Layout.columnSpan: 1 }
-
-                    component Tool: QQC2.ToolButton {
-                        display: QQC2.AbstractButton.IconOnly
-                        QQC2.ToolTip.text: text
-                        QQC2.ToolTip.visible: hovered
-                    }
-                    Tool {
-                        icon.name: "go-up"
-                        text: i18n("Move up (drawn earlier)")
-                        enabled: row.index > 0
-                        onClicked: { shadowModel.move(row.index, row.index - 1, 1); page.commit(); }
-                    }
-                    Tool {
-                        icon.name: "go-down"
-                        text: i18n("Move down (drawn later)")
-                        enabled: row.index < shadowModel.count - 1
-                        onClicked: { shadowModel.move(row.index, row.index + 1, 1); page.commit(); }
-                    }
-                    Tool {
-                        icon.name: "edit-copy"
-                        text: i18n("Duplicate")
-                        onClicked: {
-                            const s = shadowModel.get(row.index);
-                            shadowModel.insert(row.index + 1, Util.normalizeShadow({ enabled: s.enabled, x: s.x, y: s.y, blur: s.blur, spread: s.spread, color: s.color, inset: s.inset }));
-                            page.commit();
-                        }
-                    }
-                    Tool {
-                        icon.name: "edit-delete"
-                        text: i18n("Remove")
-                        onClicked: page.removeAt(row.index)
-                    }
-
-                    RowLayout {
-                        Layout.columnSpan: 8
-                        Layout.fillWidth: true
-                        enabled: row.model.enabled
-
-                        component Field: RowLayout {
-                            property alias label: lbl.text
-                            property alias from: spin.from
-                            property alias to: spin.to
-                            property string role
-                            spacing: 2
-                            QQC2.Label { id: lbl }
-                            QQC2.SpinBox {
-                                id: spin
-                                editable: true
-                                value: row.model[parent.role]
-                                onValueModified: page.setShadow(row.index, parent.role, value)
-                                Layout.preferredWidth: Kirigami.Units.gridUnit * 5
-                            }
-                        }
-                        Field { label: i18n("X"); role: "x"; from: -40; to: 40 }
-                        Field { label: i18n("Y"); role: "y"; from: -40; to: 40 }
-                        Field { label: i18n("Blur"); role: "blur"; from: 0; to: 60 }
-                        Field { label: i18n("Spread"); role: "spread"; from: -20; to: 20 }
-                    }
+            colorButton: Component {
+                ColorSpecButton {
+                    gradients: page.gradients
+                    runningState: page.cfg_runningState
                 }
             }
         }

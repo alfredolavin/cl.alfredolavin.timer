@@ -4,6 +4,8 @@ import org.kde.plasma.plasmoid
 import org.kde.plasma.core as PlasmaCore
 import org.kde.kirigami as Kirigami
 
+import "common"
+
 Item {
     id: compact
 
@@ -48,11 +50,17 @@ Item {
                 height: Math.max(9, parent.height * 0.34)
                 radius: height / 2
                 color: Kirigami.Theme.highlightColor
-                Text {
+                // accent text: white with a black outline
+                OutlinedText {
                     id: badge
                     anchors.centerIn: parent
+                    width: implicitWidth
+                    height: parent.height
                     text: compact.app.others.length
-                    color: Kirigami.Theme.highlightedTextColor
+                    color: "white"
+                    outlineColor: "black"
+                    outlineWidth: 1
+                    horizontalAlignment: Text.AlignHCenter
                     font.pixelSize: parent.height * 0.8
                     font.bold: true
                 }

@@ -1,18 +1,23 @@
 pragma Singleton
 import QtQuick
 import Qt.labs.platform as Labs
-import org.kde.plasma.plasma5support as P5Support
 
 import "code/gradients.js" as Gradients
 
 // The user's gradients, saved user-wide as CSS in ~/.config/plasma-gradients/gradients.css so every plasmoid
 // that uses the gradient picker sees the same list. The file is read and written with short shell commands
-// through the executable engine (QML cannot write files); it is re-read every few seconds so edits made in another
-// widget show up.
+// through Plasma's executable engine (QML cannot write files); it is re-read every few seconds so edits made in
+// another widget show up.
 //
 //   defs       [{name, space, hue, stops:[{pos, color, mid}]}]  editable definitions
 //   gradients  [{name, stops:[{pos, color, css}]}]               compiled, ready for Canvas
 //   adopt(css) one-time migration: if there is no file yet, the plasmoid's old `gradientsCss` becomes it
+//   io         optional file access for hosts outside Plasma (e.g. a PyQt app backing it with Python slots):
+//                  GradientStore.io = { read: () => text, write: text => {} }
+//              read() returns the file's text ("" when there is none), write(text) replaces it. Set it before the
+//              store's first read (e.g. in the host window's Component.onCompleted); while it is null the
+//              executable engine is used, and it is only created then, so org.kde.plasma.plasma5support is not
+//              needed by such hosts. Without either the list lives in memory (the built-in gradients).
 QtObject {
     id: store
 
@@ -146,6 +151,9 @@ QtObject {
     }
 
     // ---- file ----
+    property var io: null
+    onIoChanged: if (io) read()
+
     // (XMLHttpRequest may not read local files unless QML_XHR_ALLOW_FILE_READ is set, so `cat` it)
     // The executable engine remembers every source name it has ever been given (in a QQmlPropertyMap that never
     // shrinks, and gets slower with each key), so a fresh name per read, e.g. a timestamp, slowly pins plasmashell
@@ -153,11 +161,26 @@ QtObject {
     readonly property int readSlots: 4
     property int serial: 0
     function read() {
+        if (io) {
+            let text = "";
+            try {
+                text = String(io.read() || "");
+            } catch (e) {
+                console.warn("GradientStore: io.read() failed:", e);
+            }
+            received(text);
+            return;
+        }
+        const engine = executable();
+        if (!engine) {
+            received("");
+            return;
+        }
         const cmd = "cat '" + path + "' 2>/dev/null #r";
         for (let i = 0; i < readSlots; i++) {
             const source = cmd + (serial++ % readSlots);
-            if (runner.connectedSources.indexOf(source) < 0) {   // skip one still running
-                runner.connectSource(source);
+            if (engine.connectedSources.indexOf(source) < 0) {   // skip one still running
+                engine.connectSource(source);
                 return;
             }
         }
@@ -176,29 +199,60 @@ QtObject {
     }
 
     function write(text) {
-        // utf-8 safe base64, so quotes and non-latin names survive the shell
+        if (io) {
+            try {
+                io.write(text);
+            } catch (e) {
+                console.warn("GradientStore: io.write() failed:", e);
+            }
+            return;
+        }
+        const engine = executable();
+        if (!engine)
+            return;
+        // utf-8 safe base64, so quotes and non-latin names survive the shell. The command holds the text, so each
+        // different list is a new source name anyway; the suffix only lets the same list be written again while
+        // a write of it is still running (a small ring, not a counter).
         const b64 = Qt.btoa(unescape(encodeURIComponent(text)));
         pendingWrites++;
-        runner.connectSource("mkdir -p '" + dir + "' && printf %s '" + b64 + "' | base64 -d > '" + path + ".tmp' && mv '" + path + ".tmp' '" + path + "' #" + Date.now() + "-" + pendingWrites);
+        engine.connectSource("mkdir -p '" + dir + "' && printf %s '" + b64 + "' | base64 -d > '" + path + ".tmp' && mv '" + path + ".tmp' '" + path + "' #w" + (writeSerial++ % 4));
     }
+    property int writeSerial: 0
 
-    property var runner: P5Support.DataSource {
-        engine: "executable"
-        connectedSources: []
-        onNewData: (source, data) => {
-            disconnectSource(source);
+    // Plasma's executable engine, created on first use (never when the host gives `io`); null outside Plasma
+    property var runner: null
+    property bool runnerFailed: false
+    function executable() {
+        if (runner || runnerFailed)
+            return runner;
+        try {
+            runner = Qt.createQmlObject('import org.kde.plasma.plasma5support as P5Support\n'
+                                        + 'P5Support.DataSource { engine: "executable"; connectedSources: [] }', store, "GradientStoreRunner");
+        } catch (e) {
+            runnerFailed = true;
+            console.warn("GradientStore: no executable engine (not in Plasma?) and no io: gradients are kept in memory only");
+            return null;
+        }
+        runner.newData.connect((source, data) => {
+            runner.disconnectSource(source);
             if (source.indexOf("cat ") === 0)
                 store.received(data["stdout"] || "");
             else
                 store.pendingWrites = Math.max(0, store.pendingWrites - 1);
-        }
+        });
+        return runner;
     }
 
+    // the first read waits a moment, so a host can set `io` right after the store is created
     property var poll: Timer {
         interval: 5000
         repeat: true
         running: true
-        triggeredOnStart: true
         onTriggered: store.read()
+    }
+    property var firstRead: Timer {
+        interval: 0
+        running: true
+        onTriggered: if (!store.loaded) store.read()
     }
 }

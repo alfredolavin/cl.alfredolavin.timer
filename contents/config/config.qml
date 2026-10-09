@@ -20,7 +20,7 @@ ConfigModel {
     ConfigCategory {
         name: i18n("Gradients")
         icon: "color-gradient"
-        source: "configGradients.qml"
+        source: "ConfigGradients.qml"
     }
     ConfigCategory {
         name: i18n("About")

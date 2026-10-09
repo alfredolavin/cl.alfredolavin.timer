@@ -5,9 +5,12 @@ import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 
 import "code/gradients.js" as Gradients
+import "../controls"
+import "../controls/IconMetrics.js" as IconMetrics
 
 // Editor of one gradient definition: name, stops bar, selected stop (OKLCH sliders), interpolation, tools.
 // It edits `def` (a working copy owned by the host) and emits changed(def) after every edit.
+// Every setting has its own icon inside its control (the shared controls/ Icon* controls).
 ColumnLayout {
     id: ed
 
@@ -110,13 +113,18 @@ ColumnLayout {
         QQC2.ToolTip.delay: Kirigami.Units.toolTipDelay
     }
 
-    RowLayout {
-        QQC2.Label { text: i18n("Name:") }
-        QQC2.TextField {
+    Kirigami.FormLayout {
+        Layout.fillWidth: true
+        IconTextField {
             id: nameField
+            Kirigami.FormData.label: i18n("Name:")
+            iconName: "edit-rename"
             Layout.fillWidth: true
             Layout.maximumWidth: Kirigami.Units.gridUnit * 18
             onEditingFinished: ed.rename(text)
+            QQC2.ToolTip.text: i18n("The name shown in the gradient lists (unique; a number is added to a repeated name)")
+            QQC2.ToolTip.visible: hovered
+            QQC2.ToolTip.delay: Kirigami.Units.toolTipDelay
         }
     }
 
@@ -151,7 +159,10 @@ ColumnLayout {
             Kirigami.FormData.label: i18n("Color:")
             QQC2.Button {
                 id: swatch
-                implicitWidth: Kirigami.Units.gridUnit * 3
+                implicitWidth: IconMetrics.reserve + Kirigami.Units.gridUnit * 2 + IconMetrics.margin
+                leftPadding: IconMetrics.reserve
+                rightPadding: IconMetrics.margin
+                Accessible.name: i18n("Pick a color")
                 QQC2.ToolTip.text: i18n("Pick a color")
                 QQC2.ToolTip.visible: hovered
                 onClicked: ed.pickColor(ed.sel)
@@ -166,10 +177,12 @@ ColumnLayout {
                         border.color: Qt.rgba(0, 0, 0, 0.3)
                     }
                 }
+                PropertyIcon { name: "color-picker" }
             }
-            QQC2.TextField {
+            IconTextField {
                 id: colorField
-                Layout.preferredWidth: Kirigami.Units.gridUnit * 12
+                iconName: "format-text-code"
+                Layout.preferredWidth: Kirigami.Units.gridUnit * 12 + IconMetrics.reserve
                 font.family: "monospace"
                 text: ed.stop ? ed.stop.color : ""
                 readonly property bool valid: !!Gradients.parseColor(text)
@@ -212,19 +225,24 @@ ColumnLayout {
             }
         }
 
-        // OKLCH channels with previews of what each slider does
+        // OKLCH channels with previews of what each slider does: the icon of the channel inside the slider, a strip of
+        // the colors it gives along the handle's travel, and a spin box beside it as its (editable) value
         component Channel: RowLayout {
             id: ch
             property string channel
+            property alias iconName: slider.iconName
             property var lch
             property real max: 1
             property real value
             property int decimals: 0
             property real scale: 1
             property string suffix
+            property string tip
             signal moved(real v)
+            // a form label lines up with the value
+            baselineOffset: spin.y + spin.baselineOffset
             Item {
-                Layout.preferredWidth: Kirigami.Units.gridUnit * 14
+                Layout.preferredWidth: Kirigami.Units.gridUnit * 14 + IconMetrics.reserve
                 Layout.preferredHeight: slider.implicitHeight
                 Item {
                     anchors.left: parent.left
@@ -240,17 +258,23 @@ ColumnLayout {
                         stops: Gradients.channelRamp(ch.lch, ch.channel, ch.max)
                     }
                 }
-                QQC2.Slider {
+                IconSlider {
                     id: slider
                     anchors.fill: parent
                     background: Item {}
                     from: 0
                     to: ch.max
+                    // snaps to the spin box's precision
+                    stepSize: 1 / (ch.scale * Math.pow(10, ch.decimals))
                     value: ch.value
                     onMoved: ch.moved(value)
+                    QQC2.ToolTip.text: ch.tip
+                    QQC2.ToolTip.visible: hovered && ch.tip !== ""
+                    QQC2.ToolTip.delay: Kirigami.Units.toolTipDelay
                 }
             }
             QQC2.SpinBox {
+                id: spin
                 Layout.preferredWidth: Kirigami.Units.gridUnit * 5.5
                 editable: true
                 from: 0
@@ -264,7 +288,9 @@ ColumnLayout {
 
         Channel {
             Kirigami.FormData.label: i18n("Lightness:")
-            channel: "L"; max: 1; scale: 100; decimals: 1; suffix: " %"
+            channel: "L"; max: 1; scale: 100; decimals: 1; suffix: i18nc("unit, after a number", " %")
+            iconName: "colors-luma"
+            tip: i18n("Perceived lightness: 0 % black, 100 % white")
             lch: ed.lch
             value: ed.lch.L
             onMoved: v => ed.setLch("L", v)
@@ -272,20 +298,25 @@ ColumnLayout {
         Channel {
             Kirigami.FormData.label: i18n("Chroma:")
             channel: "C"; max: 0.4; decimals: 3
+            iconName: "colors-chromablue"
+            tip: i18n("Colorfulness: 0 is gray")
             lch: ed.lch
             value: ed.lch.C
             onMoved: v => ed.setLch("C", v)
         }
         Channel {
             Kirigami.FormData.label: i18n("Hue:")
-            channel: "H"; max: 360; decimals: 1; suffix: "°"
+            channel: "H"; max: 360; decimals: 1; suffix: i18nc("unit, after a number: degrees", "°")
+            iconName: "color-mode-hue-shift-positive"
+            tip: i18n("Position on the color wheel")
             lch: ed.lch
             value: ed.lch.H
             onMoved: v => ed.setLch("H", v)
         }
         Channel {
             Kirigami.FormData.label: i18n("Opacity:")
-            channel: "a"; max: 1; scale: 100; suffix: " %"
+            channel: "a"; max: 1; scale: 100; suffix: i18nc("unit, after a number", " %")
+            iconName: "edit-opacity"
             lch: ed.lch
             value: ed.lch.a
             onMoved: v => {
@@ -298,33 +329,36 @@ ColumnLayout {
             }
         }
 
-        RowLayout {
+        IconSpinBox {
+            id: posSpin
             Kirigami.FormData.label: i18n("Position:")
-            QQC2.SpinBox {
-                id: posSpin
-                Layout.preferredWidth: Kirigami.Units.gridUnit * 6
-                editable: true
-                from: 0
-                to: 1000
-                stepSize: 10
-                value: ed.stop ? Math.round(ed.stop.pos * 1000) : 0
-                textFromValue: (v, locale) => Number(v / 10).toLocaleString(locale, "f", 1) + " %"
-                valueFromText: (t, locale) => Math.round(Number.fromLocaleString(locale, t.replace("%", "").trim()) * 10)
-                onValueModified: ed.edit(d => d.stops[ed.sel].pos = value / 1000)
-            }
-            QQC2.Label { text: i18n("Midpoint before:") }
-            QQC2.SpinBox {
-                Layout.preferredWidth: Kirigami.Units.gridUnit * 6
-                editable: true
-                // the first stop has no segment before it
-                enabled: ed.stop && stopsEditor.order.indexOf(ed.sel) > 0
-                from: 2
-                to: 98
-                value: ed.stop && ed.stop.mid !== undefined ? Math.round(ed.stop.mid * 100) : 50
-                textFromValue: (v, locale) => v + " %"
-                valueFromText: (t, locale) => parseInt(t) || 50
-                onValueModified: ed.edit(d => d.stops[ed.sel].mid = value / 100, false)
-            }
+            iconName: "transform-move-horizontal"
+            from: 0
+            to: 1000
+            stepSize: 10
+            value: ed.stop ? Math.round(ed.stop.pos * 1000) : 0
+            readonly property string percent: i18nc("unit, after a number", " %")
+            textFromValue: (v, locale) => Number(v / 10).toLocaleString(locale, "f", 1) + percent
+            valueFromText: (t, locale) => Math.round(Number.fromLocaleString(locale, t.replace(percent, "").trim()) * 10)
+            onValueModified: ed.edit(d => d.stops[ed.sel].pos = value / 1000)
+            QQC2.ToolTip.text: i18n("Where the stop is along the gradient")
+            QQC2.ToolTip.visible: hovered
+            QQC2.ToolTip.delay: Kirigami.Units.toolTipDelay
+        }
+        IconSpinBox {
+            Kirigami.FormData.label: i18n("Midpoint before:")
+            iconName: "snap-nodes-midpoint"
+            // the first stop has no segment before it
+            enabled: !!ed.stop && stopsEditor.order.indexOf(ed.sel) > 0
+            from: 2
+            to: 98
+            value: ed.stop && ed.stop.mid !== undefined ? Math.round(ed.stop.mid * 100) : 50
+            suffix: i18nc("unit, after a number", " %")
+            onValueModified: ed.edit(d => d.stops[ed.sel].mid = value / 100, false)
+            QQC2.ToolTip.text: enabled ? i18n("Where the colors of the previous stop and this one are mixed half and half, in % of the segment between them")
+                                       : i18n("The first stop has no segment before it")
+            QQC2.ToolTip.visible: hovered
+            QQC2.ToolTip.delay: Kirigami.Units.toolTipDelay
         }
 
         RowLayout {
@@ -367,25 +401,29 @@ ColumnLayout {
             Kirigami.FormData.label: i18n("Gradient")
         }
 
-        RowLayout {
+        IconComboBox {
+            id: spaceCombo
             Kirigami.FormData.label: i18n("Interpolation:")
-            QQC2.ComboBox {
-                id: spaceCombo
-                Layout.preferredWidth: Kirigami.Units.gridUnit * 9
-                model: [i18n("sRGB"), i18n("OKLab"), i18n("OKLCH")]
-                currentIndex: ed.def ? Math.max(0, Gradients.spaces.indexOf(ed.def.space)) : 0
-                onActivated: index => ed.edit(d => d.space = Gradients.spaces[index], false)
-                QQC2.ToolTip.text: i18n("sRGB: plain RGB mixing. OKLab: perceptually even, no muddy middle. OKLCH: goes around the color wheel.")
-                QQC2.ToolTip.visible: hovered
-                QQC2.ToolTip.delay: Kirigami.Units.toolTipDelay
-            }
-            QQC2.ComboBox {
-                Layout.preferredWidth: Kirigami.Units.gridUnit * 9
-                visible: ed.def && ed.def.space === "oklch"
-                model: [i18n("Shorter hue"), i18n("Longer hue"), i18n("Increasing hue"), i18n("Decreasing hue")]
-                currentIndex: ed.def ? Math.max(0, Gradients.hueModes.indexOf(ed.def.hue || "shorter")) : 0
-                onActivated: index => ed.edit(d => d.hue = Gradients.hueModes[index], false)
-            }
+            iconName: "interpolate"
+            model: [i18n("sRGB"), i18n("OKLab"), i18n("OKLCH")]
+            currentIndex: ed.def ? Math.max(0, Gradients.spaces.indexOf(ed.def.space)) : 0
+            onActivated: index => ed.edit(d => d.space = Gradients.spaces[index], false)
+            QQC2.ToolTip.text: i18n("sRGB: plain RGB mixing. OKLab: perceptually even, no muddy middle. OKLCH: goes around the color wheel.")
+            QQC2.ToolTip.visible: hovered
+            QQC2.ToolTip.delay: Kirigami.Units.toolTipDelay
+        }
+        IconComboBox {
+            Kirigami.FormData.label: i18n("Hue direction:")
+            iconName: "object-rotate-right"
+            // only OKLCH goes around the color wheel
+            enabled: !!ed.def && ed.def.space === "oklch"
+            model: [i18n("Shorter hue"), i18n("Longer hue"), i18n("Increasing hue"), i18n("Decreasing hue")]
+            currentIndex: ed.def ? Math.max(0, Gradients.hueModes.indexOf(ed.def.hue || "shorter")) : 0
+            onActivated: index => ed.edit(d => d.hue = Gradients.hueModes[index], false)
+            QQC2.ToolTip.text: enabled ? i18n("Which way around the color wheel the hue goes between two stops")
+                                       : i18n("Only with OKLCH interpolation")
+            QQC2.ToolTip.visible: hovered
+            QQC2.ToolTip.delay: Kirigami.Units.toolTipDelay
         }
 
         Flow {
@@ -444,13 +482,18 @@ ColumnLayout {
     // ---- generated CSS ----
     RowLayout {
         Layout.fillWidth: true
-        QQC2.TextField {
+        IconTextField {
             id: cssField
+            iconName: "text-css"
             Layout.fillWidth: true
             readOnly: true
             font.family: "monospace"
             text: ed.def ? Gradients.stringify(ed.def) : ""
-            cursorPosition: 0
+            // show the start of the CSS, not its end
+            onTextChanged: cursorPosition = 0
+            QQC2.ToolTip.text: i18n("The gradient as CSS (read only)")
+            QQC2.ToolTip.visible: hovered
+            QQC2.ToolTip.delay: Kirigami.Units.toolTipDelay
         }
         Tool {
             icon.name: "edit-copy"

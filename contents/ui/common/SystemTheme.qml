@@ -1,12 +1,13 @@
 import QtQuick
 import org.kde.kirigami as Kirigami
 
-// The Plasma color scheme's colors as a plain object, for the configurable colors (code/colorspec.js), which
+// The Plasma color scheme's colors as a plain object, for the configurable colors (colorspec/), which
 // cannot see Kirigami.Theme. It follows the scheme live: put one where colors are resolved and pass `map` along.
 Item {
     id: sys
 
-    visible: false
+    // visible (but empty): Kirigami stops updating the theme of invisible items
+    visible: true
     width: 0
     height: 0
 

@@ -3,8 +3,10 @@ import QtQuick.Layouts
 import org.kde.plasma.plasmoid
 import org.kde.kirigami as Kirigami
 
+import "bundledicons"
 import "code/util.js" as Util
-import "code/gradients.js" as Gradients
+import "common"
+import "gradientpicker/code/gradients.js" as Gradients
 import "code/colorspec.js" as ColorSpec
 import "textspec/TextSpecCore.js" as TextSpecCore
 
@@ -148,7 +150,7 @@ Rectangle {
                 trackColor: frame.spec(cfg.trackColor)
                 borderColor: frame.spec(cfg.barBorderColor)
                 borderWidth: cfg.barBorderWidth
-                shadows: Util.parseShadows(cfg.barShadows)
+                shadows: TextSpecCore.parseShadows(cfg.barShadows)
                 glow: ({ enabled: cfg.glowEnabled, color: frame.glowColor,
                          radius: cfg.glowRadius, strength: cfg.glowStrength, opacity: cfg.glowOpacity / 100 })
                 radius: frame.container ? cfg.cornerRadius : cfg.barRadius

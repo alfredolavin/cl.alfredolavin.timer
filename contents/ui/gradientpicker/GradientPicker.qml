@@ -5,6 +5,7 @@ import QtQuick.Window
 import org.kde.kirigami as Kirigami
 
 import "code/gradients.js" as Gradients
+import "../controls"
 
 // The saved gradients as a grid of small rounded squares (name as tooltip). Click picks one; the context menu
 // edits, duplicates, moves or deletes it; the trailing "+" adds more. The list is user-wide (GradientStore).
@@ -346,8 +347,9 @@ Item {
                 wrapMode: Text.WordWrap
                 text: i18n("Paste CSS. Every linear-gradient() (or radial/conic) is added to the list. The name comes from a preceding /* comment */, a .class-name { or a “Name:” label.")
             }
-            QQC2.TextArea {
+            IconTextArea {
                 id: importText
+                iconName: "document-import"
                 Layout.fillWidth: true
                 Layout.preferredHeight: Kirigami.Units.gridUnit * 12
                 font.family: "monospace"

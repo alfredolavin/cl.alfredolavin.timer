@@ -7,9 +7,10 @@ import org.kde.plasma.extras as PlasmaExtras
 import org.kde.plasma.components as PlasmaComponents
 import org.kde.kirigami as Kirigami
 
+import "bundledicons"
 import "code/util.js" as Util
 import "gradientpicker"
-import "code/gradients.js" as Gradients
+import "gradientpicker/code/gradients.js" as Gradients
 
 // Popup: running timers on the left, timers that can be started on the right
 PlasmaExtras.Representation {
@@ -163,7 +164,7 @@ PlasmaExtras.Representation {
                 }
             }
 
-            IconPicker {
+            BundledIconPicker {
                 id: quickIconPicker
                 selected: quickRow.icon || "f051b"
                 onPicked: hex => quickRow.icon = hex

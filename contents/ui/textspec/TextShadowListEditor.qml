@@ -4,113 +4,154 @@ import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 
 import "TextSpecCore.js" as TextSpecCore
-import "../colorspec"
+import "../common"
+import "../controls"
 
-// Multi-shadow editor conforming to turbotodo's shadow editor specification
-// Stores and edits a list of shadow objects [{enabled, x, y, blur, spread, color, inset}]
+// Editor of a list of shadows [{enabled, x, y, blur, spread, color, inset}] like CSS text-/box-shadow (several
+// allowed: drop shadows, inner shadows, halos), with presets. Each shadow is a framed row; every setting in it has
+// its own icon inside its control (shared controls/). Two ways to use it:
+//
+//   list:  shadows: spec.shadows      onEdited: list => …            (textspec/TextStyleEditor)
+//   JSON:  property alias cfg_x: editor.value   (written back here), or bind `value` and handle valueEdited(json)
+//
+// Each row's color is made by `colorButton`, a Component of a configurable-color button with `value`,
+// `dialogTitle`, `iconName` and `edited(string)`; the default is common/SourceColorButton (system colors, plus the
+// first of `gradients` for the gradient sources). Widgets pass their own adapter to offer their color sources.
 ColumnLayout {
     id: ed
 
+    // the list (array of shadow objects or a JSON string); read only, the edits go out through edited()
     property var shadows: []
+    // the same list as JSON; written back on every edit, so a cfg_ property can be aliased to it
+    property string value
+    // [{name, stops}]: the default color button offers the first one's begin, end and fill
     property var gradients: []
+    property Component colorButton: defaultColorButton
+    // wording of the inset option: shadows of text ("inside the letters") or of a shape
+    property bool forText: true
+    // true while the editor writes its own value, so the change is not loaded back
+    property bool own: false
 
     signal edited(var shadowsList)
+    signal valueEdited(string json)
+
+    onShadowsChanged: if (!own) load(shadows)
+    onValueChanged: if (!own) load(value)
+    Component.onCompleted: load(value !== "" ? value : shadows)
 
     ListModel { id: shadowModel }
 
-    property bool internalChange: false
-
-    onShadowsChanged: {
-        if (internalChange) return;
-        load();
+    Component {
+        id: defaultColorButton
+        SourceColorButton {
+            stops: ed.gradients.length && ed.gradients[0].stops ? ed.gradients[0].stops : []
+        }
     }
 
-    Component.onCompleted: load()
-
-    function load() {
+    function load(data) {
         shadowModel.clear();
-        const parsed = TextSpecCore.parseShadows(shadows);
-        for (let i = 0; i < parsed.length; ++i) {
-            shadowModel.append(TextSpecCore.normalizeShadow(parsed[i]));
-        }
+        TextSpecCore.parseShadows(data).forEach(s => shadowModel.append(s));
+    }
+
+    function entry(s) {
+        return { enabled: s.enabled, x: s.x, y: s.y, blur: s.blur, spread: s.spread, color: s.color, inset: s.inset };
     }
 
     function commit() {
-        const arr = [];
-        for (let i = 0; i < shadowModel.count; ++i) {
-            const s = shadowModel.get(i);
-            arr.push({
-                enabled: s.enabled,
-                x: s.x,
-                y: s.y,
-                blur: s.blur,
-                spread: s.spread,
-                color: s.color,
-                inset: s.inset
-            });
-        }
-        internalChange = true;
-        shadows = arr;
-        edited(arr);
-        internalChange = false;
+        const a = [];
+        for (let i = 0; i < shadowModel.count; ++i)
+            a.push(entry(shadowModel.get(i)));
+        const json = JSON.stringify(a);
+        own = true;
+        value = json;
+        edited(a);
+        valueEdited(json);
+        own = false;
     }
 
-    function removeAt(idx) {
-        shadowModel.remove(idx);
+    // called from the row's own button: the row is destroyed by the removal, so the rest runs here
+    function removeAt(i) {
+        shadowModel.remove(i);
         commit();
     }
 
-    function setShadowProp(idx, prop, val) {
-        shadowModel.setProperty(idx, prop, val);
+    function setShadow(i, role, v) {
+        shadowModel.setProperty(i, role, v);
+        commit();
+    }
+
+    function addPreset(index, replace) {
+        const p = TextSpecCore.shadowPresets[index];
+        if (!p || !p.shadows)
+            return;
+        if (replace)
+            shadowModel.clear();
+        p.shadows.forEach(s => shadowModel.append(TextSpecCore.normalizeShadow(s)));
         commit();
     }
 
     spacing: Kirigami.Units.smallSpacing
 
-    RowLayout {
+    component Tool: QQC2.ToolButton {
+        display: QQC2.AbstractButton.IconOnly
+        QQC2.ToolTip.text: text
+        QQC2.ToolTip.visible: hovered
+        QQC2.ToolTip.delay: Kirigami.Units.toolTipDelay
+    }
+
+    // a labelled number in px (inline components do not see the file's ids: the value goes out through modified)
+    component Field: RowLayout {
+        property alias label: lbl.text
+        property alias iconName: spin.iconName
+        property alias from: spin.from
+        property alias to: spin.to
+        property string tip
+        property real current
+        signal modified(int v)
+        spacing: Kirigami.Units.smallSpacing
+        QQC2.Label { id: lbl }
+        IconSpinBox {
+            id: spin
+            value: Math.round(parent.current || 0)
+            suffix: i18nc("unit, after a number", " px")
+            onValueModified: parent.modified(value)
+            QQC2.ToolTip.text: parent.tip
+            QQC2.ToolTip.visible: hovered && parent.tip !== ""
+            QQC2.ToolTip.delay: Kirigami.Units.toolTipDelay
+        }
+    }
+
+    // add one, or the shadows of a preset
+    Flow {
         Layout.fillWidth: true
         spacing: Kirigami.Units.smallSpacing
 
-        QQC2.Button {
-            icon.name: "list-add"
-            text: i18n("Add shadow")
+        IconTextButton {
+            iconName: "list-add"
+            label: i18n("Add shadow")
             onClicked: {
                 shadowModel.append(TextSpecCore.normalizeShadow({ enabled: true, x: 1, y: 1, blur: 4, spread: 0, color: "#80000000", inset: false }));
                 ed.commit();
             }
         }
-
-        Item { Layout.fillWidth: true }
-
-        QQC2.ComboBox {
+        IconComboBox {
             id: presetCombo
-            model: TextSpecCore.shadowPresets.map(p => p.name)
-            Layout.preferredWidth: Kirigami.Units.gridUnit * 8
+            iconName: "bookmarks"
+            // preset names are translated where shown
+            model: TextSpecCore.shadowPresets.map(p => i18n(p.name))
+            QQC2.ToolTip.text: i18n("Ready-made shadows: add them to the list or replace the list with them")
+            QQC2.ToolTip.visible: hovered
+            QQC2.ToolTip.delay: Kirigami.Units.toolTipDelay
         }
-
-        QQC2.Button {
-            text: i18n("Append")
-            icon.name: "list-add"
-            onClicked: {
-                const p = TextSpecCore.shadowPresets[presetCombo.currentIndex];
-                if (p && p.shadows) {
-                    p.shadows.forEach(s => shadowModel.append(TextSpecCore.normalizeShadow(s)));
-                    ed.commit();
-                }
-            }
+        Tool {
+            icon.name: "document-import"
+            text: i18n("Add the preset's shadows to the list")
+            onClicked: ed.addPreset(presetCombo.currentIndex, false)
         }
-
-        QQC2.Button {
-            text: i18n("Replace")
+        Tool {
             icon.name: "document-replace"
-            onClicked: {
-                const p = TextSpecCore.shadowPresets[presetCombo.currentIndex];
-                if (p && p.shadows) {
-                    shadowModel.clear();
-                    p.shadows.forEach(s => shadowModel.append(TextSpecCore.normalizeShadow(s)));
-                    ed.commit();
-                }
-            }
+            text: i18n("Replace the list with the preset's shadows")
+            onClicked: ed.addPreset(presetCombo.currentIndex, true)
         }
     }
 
@@ -131,109 +172,121 @@ ColumnLayout {
             required property var model
             Layout.fillWidth: true
 
-            GridLayout {
+            ColumnLayout {
                 anchors.fill: parent
-                columns: 8
-                columnSpacing: Kirigami.Units.smallSpacing
-                rowSpacing: Kirigami.Units.smallSpacing
-
-                QQC2.CheckBox {
-                    checked: row.model.enabled
-                    onToggled: ed.setShadowProp(row.index, "enabled", checked)
-                    QQC2.ToolTip.text: i18n("Enabled")
-                    QQC2.ToolTip.visible: hovered
-                }
-
-                ColorSpecButton {
-                    value: row.model.color
-                    dialogTitle: i18n("Shadow Color")
-                    onEdited: ed.setShadowProp(row.index, "color", value)
-                }
-
-                QQC2.CheckBox {
-                    text: i18n("Inset")
-                    checked: row.model.inset
-                    onToggled: ed.setShadowProp(row.index, "inset", checked)
-                }
-
-                Item { Layout.fillWidth: true }
-
-                component Tool: QQC2.ToolButton {
-                    display: QQC2.AbstractButton.IconOnly
-                    QQC2.ToolTip.text: text
-                    QQC2.ToolTip.visible: hovered
-                }
-
-                Tool {
-                    icon.name: "go-up"
-                    text: i18n("Move up")
-                    enabled: row.index > 0
-                    onClicked: {
-                        shadowModel.move(row.index, row.index - 1, 1);
-                        ed.commit();
-                    }
-                }
-
-                Tool {
-                    icon.name: "go-down"
-                    text: i18n("Move down")
-                    enabled: row.index < shadowModel.count - 1
-                    onClicked: {
-                        shadowModel.move(row.index, row.index + 1, 1);
-                        ed.commit();
-                    }
-                }
-
-                Tool {
-                    icon.name: "edit-copy"
-                    text: i18n("Duplicate")
-                    onClicked: {
-                        const s = shadowModel.get(row.index);
-                        shadowModel.insert(row.index + 1, TextSpecCore.normalizeShadow({
-                            enabled: s.enabled,
-                            x: s.x,
-                            y: s.y,
-                            blur: s.blur,
-                            spread: s.spread,
-                            color: s.color,
-                            inset: s.inset
-                        }));
-                        ed.commit();
-                    }
-                }
-
-                Tool {
-                    icon.name: "edit-delete"
-                    text: i18n("Remove")
-                    onClicked: ed.removeAt(row.index)
-                }
+                spacing: Kirigami.Units.smallSpacing
 
                 RowLayout {
-                    Layout.columnSpan: 8
                     Layout.fillWidth: true
-                    enabled: row.model.enabled
                     spacing: Kirigami.Units.smallSpacing
 
-                    component Field: RowLayout {
-                        property alias label: lbl.text
-                        property alias from: spin.from
-                        property alias to: spin.to
-                        property string role
-                        spacing: 2
-                        QQC2.Label { id: lbl }
-                        QQC2.SpinBox {
-                            id: spin
-                            editable: true
-                            value: Math.round(row.model[parent.role] || 0)
-                            onValueModified: ed.setShadowProp(row.index, parent.role, value)
-                            Layout.preferredWidth: Kirigami.Units.gridUnit * 4.5
+                    IconCheckBox {
+                        iconName: "object-visible"
+                        text: i18n("Shadow %1", row.index + 1)
+                        checked: row.model.enabled
+                        onToggled: ed.setShadow(row.index, "enabled", checked)
+                        QQC2.ToolTip.text: i18n("Draw this shadow")
+                        QQC2.ToolTip.visible: hovered
+                        QQC2.ToolTip.delay: Kirigami.Units.toolTipDelay
+                    }
+                    Item { Layout.fillWidth: true }
+                    Tool {
+                        icon.name: "go-up"
+                        text: i18n("Move up (drawn earlier)")
+                        enabled: row.index > 0
+                        onClicked: { shadowModel.move(row.index, row.index - 1, 1); ed.commit(); }
+                    }
+                    Tool {
+                        icon.name: "go-down"
+                        text: i18n("Move down (drawn later)")
+                        enabled: row.index < shadowModel.count - 1
+                        onClicked: { shadowModel.move(row.index, row.index + 1, 1); ed.commit(); }
+                    }
+                    Tool {
+                        icon.name: "edit-copy"
+                        text: i18n("Duplicate")
+                        onClicked: {
+                            shadowModel.insert(row.index + 1, TextSpecCore.normalizeShadow(ed.entry(shadowModel.get(row.index))));
+                            ed.commit();
                         }
                     }
+                    Tool {
+                        icon.name: "edit-delete"
+                        text: i18n("Remove")
+                        onClicked: ed.removeAt(row.index)
+                    }
+                }
 
-                    Field { label: i18n("X:"); role: "x"; from: -40; to: 40 }
-                    Field { label: i18n("Y:"); role: "y"; from: -40; to: 40 }
-                    Field { label: i18n("Blur:"); role: "blur"; from: 0; to: 60 }
-                    Field { label: i18n("Spread:"); role: "spread"; from: -20; to: 20 }
+                // the shadow's settings; disabled while it is off
+                Flow {
+                    Layout.fillWidth: true
+                    enabled: row.model.enabled
+                    spacing: Kirigami.Units.largeSpacing
+
+                    RowLayout {
+                        spacing: Kirigami.Units.smallSpacing
+                        QQC2.Label { text: i18n("Color:") }
+                        Loader {
+                            id: colorLoader
+                            // handed to the button (a literal here, so shared/tools/gen_icons.py bundles it)
+                            property string iconName: "paper-color"
+                            sourceComponent: ed.colorButton
+                            onLoaded: {
+                                item.dialogTitle = i18n("Shadow Color");
+                                if (item.iconName !== undefined)
+                                    item.iconName = iconName;
+                                item.edited.connect(v => ed.setShadow(row.index, "color", v));
+                            }
+                        }
+                        // a Binding (not a property binding): it stays in force when the button writes its own value
+                        Binding {
+                            target: colorLoader.item
+                            when: colorLoader.item !== null
+                            property: "value"
+                            value: row.model.color
+                        }
+                    }
+                    IconCheckBox {
+                        iconName: "path-inset"
+                        text: ed.forText ? i18n("Inside the letters") : i18n("Inside the shape")
+                        checked: row.model.inset
+                        onToggled: ed.setShadow(row.index, "inset", checked)
+                        QQC2.ToolTip.text: ed.forText ? i18n("An inset shadow, drawn inside the letters instead of behind them")
+                                                      : i18n("An inner shadow, drawn inside the shape instead of around it")
+                        QQC2.ToolTip.visible: hovered
+                        QQC2.ToolTip.delay: Kirigami.Units.toolTipDelay
+                    }
+                }
+                Flow {
+                    Layout.fillWidth: true
+                    enabled: row.model.enabled
+                    spacing: Kirigami.Units.largeSpacing
+
+                    // offsets, blur and spread
+                    Field {
+                        label: i18n("X:"); iconName: "transform-move-horizontal"; from: -40; to: 40
+                        tip: i18n("Horizontal offset (right is positive)")
+                        current: row.model.x
+                        onModified: v => ed.setShadow(row.index, "x", v)
+                    }
+                    Field {
+                        label: i18n("Y:"); iconName: "transform-move-vertical"; from: -40; to: 40
+                        tip: i18n("Vertical offset (down is positive)")
+                        current: row.model.y
+                        onModified: v => ed.setShadow(row.index, "y", v)
+                    }
+                    Field {
+                        label: i18n("Blur:"); iconName: "object-tweak-blur"; from: 0; to: 60
+                        tip: i18n("Blur radius")
+                        current: row.model.blur
+                        onModified: v => ed.setShadow(row.index, "blur", v)
+                    }
+                    Field {
+                        label: i18n("Spread:"); iconName: "offset"; from: -20; to: 20
+                        tip: i18n("Grows (or shrinks) the shadow before blurring it")
+                        current: row.model.spread
+                        onModified: v => ed.setShadow(row.index, "spread", v)
+                    }
                 }
             }
         }

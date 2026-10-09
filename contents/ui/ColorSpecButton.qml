@@ -3,31 +3,21 @@ import QtQuick.Controls as QQC2
 import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 
-import "colorspec" as CS
-import "code/colorspec.js" as ColorSpec
-import "code/gradients.js" as Gradients
+import "common"
+import "controls"
+import "gradientpicker/code/gradients.js" as Gradients
 import "code/util.js" as Util
 
-// The shared configurable-color button (colorspec/, see code/colorspec.js) with this widget's sources: the
-// active gradient's begin, end and current fill, previewed on the running timer or any gradient.
-CS.ColorSpecButton {
+// The shared configurable-color button with the usual sources (common/SourceColorButton: system colors, the
+// active gradient's begin, end and current fill) and the icon of its setting (`iconName`), previewed here on the
+// running timer or any gradient. The new value is also written to `value`, so `cfg_x: button.value` aliases work.
+SourceColorButton {
     id: btn
 
     // for the previews: the gradient list and the running timers (JSON, cfg_runningState)
     property var gradients: []
     property string runningState
 
-    // the Plasma color scheme, for the "System" source
-    SystemTheme {
-        id: sys
-    }
-
-    sources: [{ id: "system", name: i18n("System"), optionLabel: i18n("System color:"),
-                options: ColorSpec.SYSTEM.map(e => ({ id: e[0], name: i18n(e[1]) })) },
-              { id: "begin", name: i18n("Gradient begin") }, { id: "end", name: i18n("Gradient end") },
-              { id: "current", name: i18n("Current fill") }]
-    baseColor: (src, fixedColor, ctx, option) => ColorSpec.baseOf({ src: src, color: fixedColor, sys: option },
-                                                                   ctx ? ctx.stops : [], ctx ? ctx.progress : 0.6, sys.map)
     onEdited: v => value = v
 
     // Preview choices: the timer the panel shows first (at its real fill), then every gradient
@@ -45,7 +35,8 @@ CS.ColorSpecButton {
         .concat(gradients.map(g => ({ name: g.name, stops: g.stops, progress: -1 })))
 
     // the button's own swatch uses the first preview choice at its fill (60 % for a plain gradient)
-    context: choices.length ? { stops: choices[0].stops, progress: choices[0].progress >= 0 ? choices[0].progress : 0.6 } : null
+    stops: choices.length ? choices[0].stops : []
+    progress: choices.length && choices[0].progress >= 0 ? choices[0].progress : 0.6
 
     decoration: Component {
         GradientBar {
@@ -73,22 +64,22 @@ CS.ColorSpecButton {
 
             RowLayout {
                 Kirigami.FormData.label: i18n("Gradient:")
-                QQC2.ComboBox {
+                IconComboBox {
                     id: sampleCombo
+                    iconName: "color-gradient"
                     model: btn.choices
                     textRole: "name"
-                    Layout.preferredWidth: Kirigami.Units.gridUnit * 10
                 }
-                QQC2.Slider {
+                IconValueSlider {
                     id: fillSlider
                     visible: !(extra.choice && extra.choice.progress >= 0)
+                    iconName: "office-chart-bar-percentage"
                     from: 0
                     to: 1
+                    stepSize: 0.01
                     value: 0.6
-                    Kirigami.StyleHints.tickMarkStepSize: -1
-                    Layout.preferredWidth: Kirigami.Units.gridUnit * 5
-                    QQC2.ToolTip.text: i18n("How far the bar is filled")
-                    QQC2.ToolTip.visible: hovered
+                    format: v => i18n("%1 % filled", Math.round(v * 100))
+                    Layout.preferredWidth: Kirigami.Units.gridUnit * 11
                 }
                 QQC2.Label {
                     visible: !fillSlider.visible

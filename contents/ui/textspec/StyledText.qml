@@ -2,6 +2,8 @@ import QtQuick
 import QtQuick.Effects
 import "TextSpecCore.js" as TextSpecCore
 import "../gradientpicker"
+import "../common"
+import "../common/ColorSources.js" as ColorSources
 
 // Renders text fully styled according to a TextSpec (JSON string or object):
 // font family, font-weight, glow, shadow, outline width, outline color,
@@ -26,6 +28,22 @@ Item {
     property int elide: Text.ElideNone
     property int wrapMode: Text.NoWrap
 
+    // The spec's colors are configurable colors (colorspec/): plain ("#aarrggbb") or JSON following a system color
+    // of the Plasma color scheme ({"src":"system","sys":"textColor", …}); resolved here, live with the scheme
+    SystemTheme {
+        id: systemTheme
+    }
+    function rgbaOf(str, fallback) {
+        return ColorSources.resolve(str, [], 0, systemTheme.map, fallback);
+    }
+    function colorOf(str, fallback) {
+        const c = rgbaOf(str, fallback);
+        return Qt.rgba(c.r, c.g, c.b, c.a === undefined ? 1 : c.a);
+    }
+    function cssOf(str, fallback) {
+        return ColorSources.css(rgbaOf(str, fallback));
+    }
+
     // Gradients lookup function or store (optional, fallback to smooth color)
     property var gradientStopsProvider: null
 
@@ -40,7 +58,7 @@ Item {
         anchors.fill: parent
         visible: root.activeSpec.bgMode === "color"
         radius: root.activeSpec.bgRadius
-        color: root.activeSpec.bgColor
+        color: root.colorOf(root.activeSpec.bgColor, "#40000000")
     }
 
     // Background gradient layer using GradientStore
@@ -69,7 +87,7 @@ Item {
                     stops.forEach(s => g.addColorStop(Math.max(0, Math.min(1, s.pos)), s.css));
                     ctx.fillStyle = g;
                 } else {
-                    ctx.fillStyle = root.activeSpec.bgColor || "#1a73e8";
+                    ctx.fillStyle = root.cssOf(root.activeSpec.bgColor, "#1a73e8");
                 }
                 ctx.fill();
             }
@@ -111,7 +129,7 @@ Item {
                 width: mainText.width
                 height: mainText.height
                 text: root.text
-                color: root.activeSpec.glowColor
+                color: root.colorOf(root.activeSpec.glowColor, "#ffffaa00")
                 font: mainText.font
                 horizontalAlignment: mainText.horizontalAlignment
                 verticalAlignment: mainText.verticalAlignment
@@ -142,7 +160,7 @@ Item {
                     width: mainText.width
                     height: mainText.height
                     text: root.text
-                    color: modelData.color || "#80000000"
+                    color: root.colorOf(modelData.color, "#80000000")
                     font: mainText.font
                     horizontalAlignment: mainText.horizontalAlignment
                     verticalAlignment: mainText.verticalAlignment
@@ -176,7 +194,7 @@ Item {
                 width: mainText.width
                 height: mainText.height
                 text: root.text
-                color: root.activeSpec.outlineColor
+                color: root.colorOf(root.activeSpec.outlineColor, "#ff000000")
                 font: mainText.font
                 horizontalAlignment: mainText.horizontalAlignment
                 verticalAlignment: mainText.verticalAlignment
@@ -191,7 +209,7 @@ Item {
             anchors.centerIn: parent
             width: root.width > 0 ? (root.activeSpec.bgMode !== "none" ? root.width - (root.activeSpec.bgPadding * 2) : root.width) : undefined
             text: root.text
-            color: root.activeSpec.textColor
+            color: root.colorOf(root.activeSpec.textColor, "#ffffffff")
             horizontalAlignment: root.horizontalAlignment
             verticalAlignment: root.verticalAlignment
             elide: root.elide
@@ -245,7 +263,7 @@ Item {
                         stops.forEach(s => g.addColorStop(Math.max(0, Math.min(1, s.pos)), s.css));
                         ctx.fillStyle = g;
                     } else {
-                        ctx.fillStyle = root.activeSpec.textColor || "#ffffffff";
+                        ctx.fillStyle = root.cssOf(root.activeSpec.textColor, "#ffffffff");
                     }
                     ctx.fillRect(0, 0, w, h);
                 }

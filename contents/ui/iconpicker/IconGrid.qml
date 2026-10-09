@@ -3,9 +3,12 @@ import QtQuick.Controls as QQC2
 import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 
+import "../controls"
+
 // Searchable, categorized grid of icons. Body of IconPicker; also usable inline (e.g. inside an editor).
 // The icon set is given by the host: `icons` ([id, name, category] rows), `categories` (titles, first = all) and
-// `iconComponent` (an Item with `icon` and `color` properties that draws one icon).
+// `iconComponent` (an Item with `icon` and `color` properties that draws one icon). Needs the shared controls/
+// next to iconpicker/.
 ColumnLayout {
     id: grid
 
@@ -42,10 +45,15 @@ ColumnLayout {
             Layout.fillWidth: true
             placeholderText: grid.searchPlaceholder
         }
-        QQC2.ComboBox {
+        // the search field shows its own magnifier icon inside; the category its tag
+        IconComboBox {
+            iconName: "tag"
             model: grid.categories
             currentIndex: grid.category
             onActivated: index => grid.category = index
+            QQC2.ToolTip.text: i18n("Show only the icons of this category (a search looks in all of them)")
+            QQC2.ToolTip.visible: hovered
+            QQC2.ToolTip.delay: Kirigami.Units.toolTipDelay
         }
     }
 

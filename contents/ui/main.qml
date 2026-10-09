@@ -6,7 +6,7 @@ import org.kde.kirigami as Kirigami
 
 import "code/util.js" as Util
 import "gradientpicker"
-import "code/gradients.js" as Gradients
+import "gradientpicker/code/gradients.js" as Gradients
 import "panelpin"
 
 PlasmoidItem {

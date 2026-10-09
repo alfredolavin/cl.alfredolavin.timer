@@ -7,3 +7,4 @@ TextStyleButton 1.0 TextStyleButton.qml
 Checkerboard 1.0 Checkerboard.qml
 TextShadowListEditor 1.0 TextShadowListEditor.qml
 RichTextEdit 1.0 RichTextEdit.qml
+TextStyleEditor 1.0 TextStyleEditor.qml

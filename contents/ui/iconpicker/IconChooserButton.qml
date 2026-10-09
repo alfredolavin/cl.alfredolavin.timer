@@ -21,7 +21,8 @@ QQC2.AbstractButton {
     readonly property alias picker: picker
     signal picked(string id)
 
-    implicitWidth: Kirigami.Units.gridUnit * 3
+    // wider when a host puts the icon of its setting inside (leftPadding: IconMetrics.reserve + a PropertyIcon child)
+    implicitWidth: Math.max(Kirigami.Units.gridUnit * 3, leftPadding + rightPadding + Kirigami.Units.iconSizes.smallMedium + Kirigami.Units.gridUnit)
     implicitHeight: Kirigami.Units.gridUnit * 2.2
     hoverEnabled: true
     checked: picker.visible

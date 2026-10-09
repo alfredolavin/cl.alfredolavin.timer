@@ -1,7 +1,8 @@
 import QtQuick
 import QtQuick.Effects
 
-import "code/gradients.js" as Gradients
+import "common"
+import "gradientpicker/code/gradients.js" as Gradients
 import "code/colorspec.js" as ColorSpec
 
 // Rounded progress bar filled with a CSS-style gradient and outlined Rubik labels:

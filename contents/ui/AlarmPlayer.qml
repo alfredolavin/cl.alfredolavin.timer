@@ -1,7 +1,8 @@
 import QtQuick
-import org.kde.plasma.plasma5support as P5Support
 
 import "code/util.js" as Util
+import "common"
+import "common/Shell.js" as Shell
 
 // Plays the alarm with QtMultimedia when available, otherwise falls back to pw-play/paplay.
 Item {
@@ -24,7 +25,8 @@ Item {
         playing = true;
         const path = decodeURIComponent(url(index).toString().replace(/^file:\/\//, ""));
         const count = repeat > 0 ? repeat : 20;
-        exec.connectSource("sh -c 'for i in $(seq " + count + "); do pw-play \"" + path + "\" 2>/dev/null || paplay \"" + path + "\"; done'");
+        const file = Shell.quote(path);
+        runner.run("sh -c " + Shell.quote("for i in $(seq " + count + "); do pw-play " + file + " 2>/dev/null || paplay " + file + "; done"));
     }
 
     function stop() {
@@ -32,7 +34,7 @@ Item {
         if (qt.status === Loader.Ready)
             qt.item.stop();
         else // the [s] keeps pkill from matching its own shell
-            exec.connectSource("pkill -f 'contents/sound[s]/[0-9][0-9]-'");
+            runner.run("pkill -f 'contents/sound[s]/[0-9][0-9]-'");
     }
 
     Loader {
@@ -45,10 +47,7 @@ Item {
         function onFinished() { player.playing = false; }
     }
 
-    P5Support.DataSource {
-        id: exec
-        engine: "executable"
-        connectedSources: []
-        onNewData: (source, data) => disconnectSource(source)
+    ExecRunner {
+        id: runner
     }
 }

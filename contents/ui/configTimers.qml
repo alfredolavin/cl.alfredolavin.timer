@@ -4,9 +4,12 @@ import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 import org.kde.kcmutils as KCM
 
+import "bundledicons"
 import "code/util.js" as Util
+import "controls"
+import "controls/IconMetrics.js" as IconMetrics
 import "gradientpicker"
-import "code/gradients.js" as Gradients
+import "gradientpicker/code/gradients.js" as Gradients
 
 KCM.SimpleKCM {
     id: page
@@ -82,7 +85,24 @@ KCM.SimpleKCM {
 
     AlarmPlayer { id: preview }
 
-    IconPicker {
+    // a part of a time after the first one (minutes, seconds): no icon of its own, wide enough for "59 m"
+    component PartSpinBox: QQC2.SpinBox {
+        id: part
+        property string suffix: ""
+        from: 0
+        editable: true
+        wrap: true
+        textFromValue: v => Util.pad(v) + suffix
+        valueFromText: t => parseInt(t) || 0
+        implicitWidth: partMetrics.advanceWidth + IconMetrics.spinButtons + leftPadding
+        TextMetrics {
+            id: partMetrics
+            font: part.font
+            text: "00" + part.suffix
+        }
+    }
+
+    BundledIconPicker {
         id: picker
         selected: page.currentIcon
         onPicked: hex => {
@@ -262,8 +282,10 @@ KCM.SimpleKCM {
             GradientChooserButton {
                 id: quickGradientCombo
                 Layout.fillWidth: true
+                leftPadding: IconMetrics.reserve
                 selected: page.cfg_quickGradient
                 onPicked: name => page.cfg_quickGradient = name
+                PropertyIcon { name: "paint-gradient-radial" }
             }
             GradientBar {
                 Layout.fillWidth: true
@@ -283,17 +305,21 @@ KCM.SimpleKCM {
                     text: i18n("Icon of quick timers and alarms:")
                     elide: Text.ElideRight
                 }
-                IconChooserButton {
+                BundledIconChooserButton {
                     hex: page.cfg_quickIcon || "f051b"
+                    leftPadding: IconMetrics.reserve
+                    implicitWidth: Kirigami.Units.gridUnit * 3 + IconMetrics.reserve
                     onPicked: id => page.cfg_quickIcon = id
+                    PropertyIcon { name: "view-list-icons" }
                 }
                 QQC2.ToolButton {
                     icon.name: "edit-clear"
                     display: QQC2.AbstractButton.IconOnly
-                    visible: !!page.cfg_quickIcon
+                    enabled: !!page.cfg_quickIcon
                     text: i18n("Use the automatic icon (alarm bell or timer icon)")
                     QQC2.ToolTip.text: text
                     QQC2.ToolTip.visible: hovered
+                    QQC2.ToolTip.delay: Kirigami.Units.toolTipDelay
                     onClicked: page.cfg_quickIcon = ""
                 }
             }
@@ -307,9 +333,9 @@ KCM.SimpleKCM {
 
             QQC2.Button {
                 Kirigami.FormData.label: i18n("Icon:")
-                PropertyIcon { source: "preferences-desktop-icons" }
-                implicitWidth: Kirigami.Units.gridUnit * 4
-                implicitHeight: implicitWidth
+                leftPadding: IconMetrics.reserve
+                implicitWidth: Kirigami.Units.gridUnit * 4 + IconMetrics.reserve
+                implicitHeight: Kirigami.Units.gridUnit * 4
                 QQC2.ToolTip.text: i18n("Choose an icon")
                 QQC2.ToolTip.visible: hovered
                 onClicked: picker.open()
@@ -322,22 +348,21 @@ KCM.SimpleKCM {
                         color: Kirigami.Theme.textColor
                     }
                 }
+                PropertyIcon { name: "preferences-desktop-icons" }
             }
 
-            QQC2.TextField {
+            IconTextField {
                 id: nameField
                 Kirigami.FormData.label: i18n("Name:")
-                PropertyIcon { source: "format-text-bold" }
-                leftPadding: 28
+                iconName: "edit-rename"
                 Layout.preferredWidth: Kirigami.Units.gridUnit * 14
                 onTextEdited: page.setRole("name", text)
             }
 
-            QQC2.TextField {
+            IconTextField {
                 id: messageField
                 Kirigami.FormData.label: i18n("Time's up text:")
-                PropertyIcon { source: "chronometer" }
-                leftPadding: 28
+                iconName: "preferences-desktop-notification-bell"
                 Layout.preferredWidth: Kirigami.Units.gridUnit * 14
                 placeholderText: Util.finishedMessage({ name: nameField.text })
                 onTextEdited: page.setRole("message", text)
@@ -346,46 +371,64 @@ KCM.SimpleKCM {
                 QQC2.ToolTip.delay: Kirigami.Units.toolTipDelay
             }
 
-            QQC2.ComboBox {
+            IconComboBox {
                 id: kindCombo
                 Kirigami.FormData.label: i18n("Type:")
-                PropertyIcon { source: "configure" }
-                leftPadding: 28
+                iconName: "chronometer"
                 model: [i18n("Timer: counts down a duration"), i18n("Alarm: counts down to a time of day")]
                 onActivated: index => page.setRole("kind", index === 1 ? "alarm" : "timer")
             }
 
+            // the hour holds the icon of the setting; the parts after it are sized for two digits plus their unit
             RowLayout {
                 Kirigami.FormData.label: i18n("Time:")
-                PropertyIcon { source: "chronometer" }
                 visible: kindCombo.currentIndex === 1
-                QQC2.SpinBox {
+                IconSpinBox {
                     id: alarmHour
-                    from: 0; to: 23; editable: true; wrap: true
+                    iconName: "clock"
+                    from: 0; to: 23; wrap: true
                     textFromValue: v => Util.pad(v)
                     valueFromText: t => parseInt(t) || 0
                     onValueModified: page.setRole("at", value * 60 + alarmMinute.value)
+                    QQC2.ToolTip.text: i18n("Hour")
+                    QQC2.ToolTip.visible: hovered
+                    QQC2.ToolTip.delay: Kirigami.Units.toolTipDelay
                 }
                 QQC2.Label { text: ":" }
-                QQC2.SpinBox {
+                PartSpinBox {
                     id: alarmMinute
-                    from: 0; to: 59; editable: true; wrap: true
+                    to: 59
                     textFromValue: v => Util.pad(v)
                     valueFromText: t => parseInt(t) || 0
                     onValueModified: page.setRole("at", alarmHour.value * 60 + value)
+                    QQC2.ToolTip.text: i18n("Minute")
+                    QQC2.ToolTip.visible: hovered
+                    QQC2.ToolTip.delay: Kirigami.Units.toolTipDelay
                 }
             }
 
             RowLayout {
                 Kirigami.FormData.label: i18n("Duration:")
-                PropertyIcon { source: "chronometer" }
                 visible: kindCombo.currentIndex === 0
-                QQC2.SpinBox { id: hours; from: 0; to: 99; editable: true; onValueModified: page.updateDuration() }
-                QQC2.Label { text: i18nc("hours", "h") }
-                QQC2.SpinBox { id: minutes; from: 0; to: 59; editable: true; wrap: true; onValueModified: page.updateDuration() }
-                QQC2.Label { text: i18nc("minutes", "m") }
-                QQC2.SpinBox { id: seconds; from: 0; to: 59; editable: true; wrap: true; onValueModified: page.updateDuration() }
-                QQC2.Label { text: i18nc("seconds", "s") }
+                IconSpinBox {
+                    id: hours
+                    iconName: "player-time"
+                    from: 0; to: 99
+                    suffix: i18nc("hours, after a number", " h")
+                    onValueModified: page.updateDuration()
+                }
+                PartSpinBox {
+                    id: minutes
+                    to: 59
+                    suffix: i18nc("minutes, after a number", " m")
+                    onValueModified: page.updateDuration()
+                }
+                PartSpinBox {
+                    id: seconds
+                    to: 59
+                    suffix: i18nc("seconds, after a number", " s")
+                    onValueModified: page.updateDuration()
+                }
             }
 
             Flow {
@@ -410,11 +453,11 @@ KCM.SimpleKCM {
 
             RowLayout {
                 Kirigami.FormData.label: i18n("Alarm sound:")
-                PropertyIcon { source: "dialog-warning" }
-                QQC2.ComboBox {
+                IconComboBox {
                     id: soundCombo
-                    Layout.preferredWidth: Kirigami.Units.gridUnit * 10
-                    model: Util.sounds.map(s => s.name)
+                    iconName: "audio-volume-high"
+                    // sound names are translated where shown
+                    model: Util.sounds.map(s => i18n(s.name))
                     onActivated: index => {
                         page.setRole("sound", index);
                         preview.play(index, 1);
@@ -426,6 +469,7 @@ KCM.SimpleKCM {
                     text: i18n("Preview")
                     QQC2.ToolTip.text: text
                     QQC2.ToolTip.visible: hovered
+                    QQC2.ToolTip.delay: Kirigami.Units.toolTipDelay
                     onClicked: preview.play(soundCombo.currentIndex, 1)
                 }
                 QQC2.ToolButton {
@@ -434,18 +478,17 @@ KCM.SimpleKCM {
                     text: i18n("Stop")
                     QQC2.ToolTip.text: text
                     QQC2.ToolTip.visible: hovered
+                    QQC2.ToolTip.delay: Kirigami.Units.toolTipDelay
                     onClicked: preview.stop()
                 }
             }
 
-            QQC2.SpinBox {
+            IconSpinBox {
                 id: repeatSpin
                 Kirigami.FormData.label: i18n("Alarm repeats:")
-                PropertyIcon { source: "dialog-warning" }
-                leftPadding: 28
+                iconName: "media-repeat-all"
                 from: 0
                 to: 50
-                editable: true
                 textFromValue: v => v === 0 ? i18n("Until dismissed") : i18np("%1 time", "%1 times", v)
                 valueFromText: t => parseInt(t) || 0
                 onValueModified: page.setRole("repeat", value)
@@ -455,7 +498,9 @@ KCM.SimpleKCM {
                 id: gradientCombo
                 Kirigami.FormData.label: i18n("Gradient:")
                 Layout.preferredWidth: Kirigami.Units.gridUnit * 14
+                leftPadding: IconMetrics.reserve
                 onPicked: name => page.setRole("gradient", name)
+                PropertyIcon { name: "color-gradient" }
             }
 
             GradientBar {

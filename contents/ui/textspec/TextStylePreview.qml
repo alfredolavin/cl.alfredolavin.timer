@@ -61,10 +61,10 @@ Rectangle {
 
         Repeater {
             model: [
-                { name: "Dark", c: "#1c1e24" },
-                { name: "Light", c: "#ffffff" },
-                { name: "Grid", c: "#555555" },
-                { name: "Tint", c: "#1a73e8" }
+                { name: i18n("Dark background"), c: "#1c1e24" },
+                { name: i18n("Light background"), c: "#ffffff" },
+                { name: i18n("Checkered background"), c: "#555555" },
+                { name: i18n("Accent color background"), c: "#1a73e8" }
             ]
             Rectangle {
                 required property var modelData
@@ -74,8 +74,13 @@ Rectangle {
                 color: modelData.c
                 border.color: root.bgThemeIndex === index ? "#ffea00" : "#888888"
                 border.width: root.bgThemeIndex === index ? 2 : 1
+                QQC2.ToolTip.text: modelData.name
+                QQC2.ToolTip.visible: bgMouse.containsMouse
+                QQC2.ToolTip.delay: Kirigami.Units.toolTipDelay
                 MouseArea {
+                    id: bgMouse
                     anchors.fill: parent
+                    hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
                     onClicked: root.bgThemeIndex = parent.index
                 }

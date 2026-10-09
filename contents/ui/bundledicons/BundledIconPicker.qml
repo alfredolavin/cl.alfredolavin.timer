@@ -1,7 +1,7 @@
 import QtQuick
-import "iconpicker" as IP
+import "../iconpicker" as IP
 
-import "code/icons.js" as Icons
+import "icons.js" as Icons
 
 // The shared icon dialog (iconpicker/) with the bundled SVG icons
 IP.IconPicker {

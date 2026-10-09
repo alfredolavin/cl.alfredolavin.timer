@@ -6,7 +6,7 @@ import org.kde.kcmutils as KCM
 
 import "gradientpicker"
 
-// The user-wide gradients (shared with the other plasmoids): right-click a square to edit, duplicate, move or
+// Settings page of the user-wide gradients (shared with the other plasmoids): right-click a square to edit, duplicate, move or
 // delete it; "+" adds new, built-in or imported ones.
 KCM.SimpleKCM {
     id: page
